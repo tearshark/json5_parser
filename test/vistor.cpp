@@ -49,7 +49,6 @@ std::unique_ptr<char[]> load_json_from_file(json5::parser& parser, const char* p
 		if (newline != nullptr) *newline = 0;
 
 		report_file_location(path, psz, pszEnd);
-		//E:\github\json5_parser\test\vistor.cpp(25) : error C2065 : 'fclos' : undeclared identifier
 		std::cout << " : error '" << parser.Error() << "' at:" << std::endl << pszEnd << std::endl;
 	}
 	
