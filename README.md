@@ -5,12 +5,13 @@
 
 ##### 一、问题
 
-?	目前已知问题：对字符串标准支持较弱。<br>
+目前已知问题：对字符串标准支持较弱。<br>
 
 ##### 二、效率
 
-?	在I7 8700K 3.7GHz(OC 4.3GHz)，使用clang 9.0.0编译，测试data目录下附带的三个json，获得数据如下：<br>
+在I7 8700K 3.7GHz(OC 4.3GHz)，使用clang 9.0.0编译，测试data目录下附带的三个json，获得数据如下：<br>
 
+###### 1、关闭json5选项
 ```
 benchmark_parser_json parse file: ./data/canada.json
 parse 2251060 bytes cost 0.761064 s, speeds is 282.076 MB/s
@@ -26,7 +27,25 @@ parse 1727204 bytes cost 0.100364 s, speeds is 1641.22 MB/s
 | twitter.json      |      631514       |     100      |   0.0488284    | **1233.42**   |
 | citm_catalog.json |      1727204      |     100      |    0.100364    | **1641.22**   |
 
+<br>
 
+###### 2、开启json5选项
+```
+benchmark_parser_json parse file: ./data/canada.json
+parse 2251060 bytes cost 0.750216 s, speeds is 286.155 MB/s
+benchmark_parser_json parse file: ./data/twitter.json
+parse 631514 bytes cost 0.05791 s, speeds is 1039.99 MB/s
+benchmark_parser_json parse file: ./data/citm_catalog.json
+parse 1727204 bytes cost 0.113314 s, speeds is 1453.65 MB/s
+```
+
+| json文件          | 文件大小（Bytes）  | 重复次数     |  用时(秒)      | 速度(MB/S)    |
+| ----------------- | :---------------: | :----------: | :------------: | :----------: |
+| canada.json       |      2251060      |     100      |   0.750216     | **286.155**   |
+| twitter.json      |      631514       |     100      |   0.05791    | **1039.99**   |
+| citm_catalog.json |      1727204      |     100      |    0.113314    | **1453.65**   |
+
+<br>
 
 按照习惯，走一波广告：
 
