@@ -72,7 +72,9 @@ void json5_vistor(const char* path)
 					std::cout << js->l;
 					break;
 				case JSON_Type::JSONT_Boolean:
-					std::cout << js->i ? "true" : "false";
+					std::cout << (js->i ? "true" : "false");
+					break;
+				default:
 					break;
 				}
 

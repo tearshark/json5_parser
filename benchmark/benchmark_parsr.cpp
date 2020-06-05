@@ -47,7 +47,9 @@ void benchmark_parser_json(const char* pszPath)
 
 int main(int argc, char* argv[])
 {
-	if (argc > 1)
-		benchmark_parser_json(argv[1]);
+	for (int i = 1; i < argc; ++i)
+	{
+		benchmark_parser_json(argv[i]);
+	}
 	return 0;
 }

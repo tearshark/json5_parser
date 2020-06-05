@@ -1090,8 +1090,9 @@ VFX_API LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e)
 							if (sizeof(*psz) == sizeof(char))
 							{
 								char buffer[8];
-								int nCvt = sizeof(buffer);
-								wctomb_s(&nCvt, buffer, sizeof(buffer), wc);
+								//int nCvt = sizeof(buffer);
+								//wctomb_s(&nCvt, buffer, sizeof(buffer), wc);
+								int nCvt = wctomb(buffer, wc);
 								for (int x = 0; x < nCvt; ++x)
 									*psz++ = buffer[x];
 							}
