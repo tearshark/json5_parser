@@ -13,15 +13,17 @@ struct alignas(32) JSON_Value
 		int64_t				l;
 		int32_t				i;
 	};
+	
+	alignas(8)
+	LPCXSTR 				name;
 
-	LPCXSTR alignas(8)		name;
-
-	JSON_Value* alignas(8)	next;
+	alignas(8)
+	JSON_Value* 			next;
 
 	struct alignas(sizeof(void*) * 2) Name
 	{
-		LPCXSTR			start;
-		LPCXSTR			end;
+		LPCXSTR				start;
+		LPCXSTR				end;
 	};
 };
 
@@ -36,7 +38,7 @@ template<class _Vistor>
 void JSON_ForeachElements(const JSON_Value* jv, const _Vistor& vistor)
 {
 	if (JSON_GetType(jv) == JSON_Type::JSONT_Object || JSON_GetType(jv) == JSON_Type::JSONT_Array)
-		for (const JSON_Value* e = jv.elements; e != nullptr; e = e->next)
+		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->next)
 		{
 			vistor(e);
 		}
@@ -47,16 +49,11 @@ void JSON_Vistor(const JSON_Value* jv, const _Vistor& vistor, const JSON_Value* 
 {
 	vistor(jv, jparent);
 
-	switch (jv->type & JSONT_LONG_MASK)
-	{
-	case JSON_Type::JSONT_Object:
-	case JSON_Type::JSONT_Array:
-		for (const JSON_Value* e = jv.elements; e != nullptr; e = e->next)
+	if (JSON_GetType(jv) == JSON_Type::JSONT_Object || JSON_GetType(jv) == JSON_Type::JSONT_Array)
+		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->next)
 		{
 			JSON_Vistor(e, vistor, jv);
 		}
-		break;
-	}
 }
 
 struct JSON_Alloctor

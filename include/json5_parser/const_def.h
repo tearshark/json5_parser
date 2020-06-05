@@ -3,6 +3,11 @@
 
 #define VFX_API
 
+#ifndef _MSC_VER
+#define _aligned_malloc(size, alignment) aligned_alloc(alignment, size)
+#define _aligned_free(pointer) free(pointer)
+#endif
+
 namespace json5
 {
 	enum JSON_Type : uint8_t

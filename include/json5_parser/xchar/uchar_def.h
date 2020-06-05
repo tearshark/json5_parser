@@ -59,7 +59,9 @@
 /* String conversion functions */
 #define _xcstod     wcstod
 #define _xcstol     wcstol
+#define _xcstoll	wcstoll
 #define _xcstoul    wcstoul
+#define _xcstoull	wcstoull
 #define _xstof      _wtof
 #define _xstol      _wtol
 #define _xstoi      _wtoi

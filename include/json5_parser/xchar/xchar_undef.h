@@ -54,7 +54,10 @@
 /* String conversion functions */
 #undef  _xcstod     
 #undef  _xcstol     
+#undef  _xcstoll
 #undef  _xcstoul    
+#undef  _xcstoull
+
 #undef  _xstof      
 #undef  _xstol      
 #undef  _xstoi      

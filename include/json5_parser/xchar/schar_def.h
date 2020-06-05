@@ -63,7 +63,9 @@
 /* String conversion functions */
 #define _xcstod     strtod
 #define _xcstol     strtol
+#define _xcstoll	strtoll
 #define _xcstoul    strtoul
+#define _xcstoull	strtoull
 #define _xstof      atof
 #define _xstol      atol
 #define _xstoi      atoi

@@ -184,7 +184,7 @@ namespace unicode
 #include "json5_parser/xchar/xchar_undef.h"
 #include "json5_parser/xchar/schar_def.h"
 #undef JSON_U
-#define JSON_U(c,r)	(c),(r)
+#define JSON_U(c,r)
 
 namespace singlebyte
 {

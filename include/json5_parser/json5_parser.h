@@ -1,4 +1,5 @@
 #pragma once
+#include <stdlib.h>
 #include "json5_parser/const_def.h"
 
 namespace json5

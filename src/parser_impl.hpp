@@ -558,7 +558,7 @@ int64_t JSON_Parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType)
 	else if (_Radix == 16)
 		while (s < e && _json_is_hex(*s)) s++;
 
-	int64_t lValue = _xcstoi64(scanstart, (LPXSTR *)&s, _Radix);
+	int64_t lValue = _xcstoll(scanstart, (LPXSTR *)&s, _Radix);
 	eType = JSON_Type(JSONT_Long | ((_Radix - 1) << 4));
 	psz = s;
 
