@@ -1,7 +1,8 @@
-#include <algorithm>
 #include <cassert>
-#include <new>
 #include <ctype.h>
+#include <string>
+#include <algorithm>
+#include <new>
 #include "json5_parser/const_def.h"
 #include "json5_parser/config.h"
 
@@ -26,7 +27,6 @@ static void _json_init_char_flag()
 {
 	if (__json_char_init_flag != false)
 		return;
-	__json_char_init_flag = true;
 
 	memset(__json_char_flag, jsoncf_name, sizeof(__json_char_flag));
 
@@ -94,6 +94,8 @@ static void _json_init_char_flag()
 	__json_char_flag['d'] |= jsoncf_hex;
 	__json_char_flag['e'] |= jsoncf_hex;
 	__json_char_flag['f'] |= jsoncf_hex;
+
+	__json_char_init_flag = true;
 }
 
 static const double JSON_E[] =

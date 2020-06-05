@@ -54,13 +54,19 @@ void JSON_Alloctor::clear(size_t nNumBatch)
 
 
 JSON_Parser::JSON_Parser()
-	:m_pRootValue(nullptr)
+	: m_pRootValue(nullptr)
+	, m_pError(nullptr)
 {
 }
 
 JSON_Parser::~JSON_Parser()
 {
 
+}
+
+void JSON_Parser::set_error(const char* e)
+{
+	m_pError = e;
 }
 
 static inline size_t _json_is_flag(int c, size_t f) { return __json_char_flag[(unsigned char)c] & f; }
@@ -74,10 +80,10 @@ static inline  size_t _json_hex_leader(int c) { return c == 'x' || c == 'X'; }
 static inline  size_t _json_bin_leader(int c) { return c == 'b' || c == 'B'; }
 
 //提取名称
-static inline LPCXSTR _json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name & name)
+LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name & name)
 {
 	int nEndChar = 0;
-	bool bquotation = *_s == '"' || *_s == '\'';
+	bool bquotation = *_s == '"' JSON5_IF_ENABLE(|| *_s == '\'');
 	if (bquotation)
 	{
 		nEndChar = *_s;
@@ -91,14 +97,24 @@ static inline LPCXSTR _json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Nam
 		}
 		name.end = _s;
 
-		if (_s < _e && *_s == nEndChar) _s++;
-		else return nullptr;
+		if (_s < _e && *_s == nEndChar) 
+			_s++;
+		else
+		{
+			set_error("keys must be quoted.");
+			return nullptr;
+		}
 	}
 	else
 	{
+#if JSON_ENABLE_JSON5
 		name.start = _s;
 		while (_s < _e && _json_is_name(*_s)) _s++;
 		name.end = _s;
+#else
+		set_error("keys must be quoted.");
+		return nullptr;
+#endif
 	}
 
 	return _s;
@@ -191,6 +207,17 @@ JSON_Value * JSON_Parser::Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd
 
 	m_pRootValue = parse_start(psz, pszEnd);
 
+#if !JSON_ENABLE_JSON5
+	if (m_pRootValue != nullptr && psz != pszEnd)
+	{
+		psz = _json_shift_space(psz, pszEnd);
+		if (psz != pszEnd)
+		{
+			set_error("more characters after the close.");
+		}
+	}
+#endif
+
 	if (ppszEnd != nullptr)
 		*ppszEnd = psz;
 
@@ -204,12 +231,21 @@ JSON_Value * JSON_Parser::parse_pair(LPCXSTR& psz, LPCXSTR e)
 {
 	JSON_Value::Name name;
 	LPCXSTR s = _json_collect_name(psz, e, name);
-	if (s == nullptr) RET_NULL;
+	if (s == nullptr)
+		return nullptr;
 	size_t nlen = name.end - name.start;
-	if (nlen > (std::numeric_limits<uint16_t>::max)()) RET_NULL;
+	if (nlen > (std::numeric_limits<uint16_t>::max)())
+	{
+		set_error("key length exceeds 65535.");
+		RET_NULL;
+	}
 
 	s = _json_shift_space(s, e);
-	if (s >= e || (*s != ':' JSON5_IF_ENABLE(&& *s != '='))) RET_NULL;
+	if (s >= e || (*s != ':' JSON5_IF_ENABLE(&& *s != '=')))
+	{
+		set_error("missing colon.");
+		RET_NULL;
+	}
 	++s;
 
 	JSON_Value * ret = parse_value(s, e);
@@ -243,6 +279,10 @@ JSON_Value * JSON_Parser::parse_start(LPCXSTR& psz, LPCXSTR e)
 		ret->type = JSONT_Array;
 		ret = parse_array(ret, s, e);
 	}
+	else
+	{
+		set_error("A JSON payload should be an object or array.");
+	}
 
 	psz = s;
 	return ret;
@@ -253,125 +293,172 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	LPCXSTR s = _json_shift_space(psz, e);
 	if (s >= e) RET_NULL;
 
+	LPCXSTR st;
 	JSON_Value * ret = nullptr;
 	switch (*s)
 	{
 	case '{':
-	{
-		++s;
-		ret = parse_object(m_Alloctor.alloc(), s, e);
-		if (ret != nullptr)
 		{
-			ret->type = JSONT_Object;
+			++s;
+			ret = parse_object(m_Alloctor.alloc(), s, e);
+			if (ret != nullptr)
+			{
+				ret->type = JSONT_Object;
+			}
 		}
-	}
-	break;
+		break;
 	case '[':
-	{
-		++s;
-		ret = parse_array(m_Alloctor.alloc(), s, e);
-		if (ret != nullptr)
 		{
-			ret->type = JSONT_Array;
+			++s;
+			ret = parse_array(m_Alloctor.alloc(), s, e);
+			if (ret != nullptr)
+			{
+				ret->type = JSONT_Array;
+			}
 		}
-	}
-	break;
+		break;
 	case '"':
+		{
+			int nEndChar = *s;
+			++s;
+			ret = parse_string(s, e, nEndChar);
+		}
+		break;
 	case '\'':
-	{
-		int nEndChar = *s;
-		++s;
-		ret = parse_string(s, e, nEndChar);
-	}
-	break;
+		{
+#if JSON_ENABLE_JSON5
+			int nEndChar = *s;
+			++s;
+			ret = parse_string(s, e, nEndChar);
+#else
+			set_error("illegal single quote.");
+#endif
+		}
+		break;
 	case 't':
 	case 'T':
-	{
-		s = _json_cmp_string(s, e, X_T("true"));
-		if (s != nullptr)
 		{
-			ret = m_Alloctor.alloc();
-			ret->type = JSONT_Boolean;
-			ret->i = 1;
+			st = _json_cmp_string(s, e, X_T("true"));
+			if (st != nullptr)
+			{
+				ret = m_Alloctor.alloc();
+				ret->type = JSONT_Boolean;
+				ret->i = 1;
+				s = st;
+			}
+			else
+			{
+#if JSON_ENABLE_JSON5
+				goto __label_as_string;
+#else
+				set_error("bad value.");
+#endif
+			}
 		}
-	}
-	break;
+		break;
 	case 'f':
 	case 'F':
-	{
-		s = _json_cmp_string(s, e, X_T("false"));
-		if (s != nullptr)
 		{
-			ret = m_Alloctor.alloc();
-			ret->type = JSONT_Boolean;
-			ret->i = 0;
+			st = _json_cmp_string(s, e, X_T("false"));
+			if (st != nullptr)
+			{
+				ret = m_Alloctor.alloc();
+				ret->type = JSONT_Boolean;
+				ret->i = 0;
+				s = st;
+			}
+			else
+			{
+#if JSON_ENABLE_JSON5
+				goto __label_as_string;
+#else
+				set_error("bad value.");
+#endif
+			}
 		}
-	}
-	break;
+		break;
 	case 'n':
 	case 'N':
-	{
-		LPCXSTR st = _json_cmp_string(s, e, X_T("null"));
-		if (st != nullptr)
 		{
-			ret = m_Alloctor.alloc();
-			ret->type = JSONT_Nullptr;
-		}
-		else
-		{	//json5 NaN
-			st = _json_cmp_string(s, e, X_T("nan"));
+			st = _json_cmp_string(s, e, X_T("null"));
 			if (st != nullptr)
 			{
 				ret = m_Alloctor.alloc();
-				ret->type = JSONT_Double;
-				ret->f = NAN;
+				ret->type = JSONT_Nullptr;
+				s = st;
+			}
+			else
+			{	//json5 NaN
+				st = _json_cmp_string(s, e, X_T("nan"));
+				if (st != nullptr)
+				{
+					ret = m_Alloctor.alloc();
+					ret->type = JSONT_Double;
+					ret->f = NAN;
+					s = st;
+				}
+				else
+				{
+#if JSON_ENABLE_JSON5
+					goto __label_as_string;
+#else
+					set_error("bad value.");
+#endif
+				}
 			}
 		}
-		s = st;
-	}
-	break;
+		break;
 	case 'i':
 	case 'I':	//json5 Infinity
-	{
-		s = _json_cmp_string(s, e, X_T("infinity"));
-		if (s != nullptr)
 		{
-			ret = m_Alloctor.alloc();
-			ret->type = JSONT_Double;
-			ret->f = INFINITY;
+			st = _json_cmp_string(s, e, X_T("infinity"));
+			if (st != nullptr)
+			{
+				ret = m_Alloctor.alloc();
+				ret->type = JSONT_Double;
+				ret->f = INFINITY;
+				s = st;
+			}
+			else
+			{
+#if JSON_ENABLE_JSON5
+				goto __label_as_string;
+#else
+				set_error("bad value.");
+#endif
+			}
 		}
-	}
-	break;
+		break;
 	case '+':
 	case '-':
-	{	//json5 -Infinity/-NaN
-		LPCXSTR st = s + 1;
-		if (st >= e) RET_NULL;
-		if (*st == 'n' || *st == 'N')
-		{
-			st = _json_cmp_string(st, e, X_T("nan"));
-			if (st != nullptr)
+		{	//json5 -Infinity/-NaN
+			st = s + 1;
+			if (st >= e) RET_NULL;
+			if (*st == 'n' || *st == 'N')
 			{
-				ret = m_Alloctor.alloc();
-				ret->type = JSONT_Double;
-				ret->f = (*s == '+') ? NAN : -NAN;
+				st = _json_cmp_string(st, e, X_T("nan"));
+				if (st != nullptr)
+				{
+					ret = m_Alloctor.alloc();
+					ret->type = JSONT_Double;
+					ret->f = (*s == '+') ? NAN : -NAN;
+				}
+				s = st;
+				break;
 			}
-			s = st;
-			break;
-		}
-		else if (*st == 'i' || *st == 'I')
-		{
-			st = _json_cmp_string(st, e, X_T("infinity"));
-			if (st != nullptr)
+			else if (*st == 'i' || *st == 'I')
 			{
-				ret = m_Alloctor.alloc();
-				ret->type = JSONT_Double;
-				ret->f = (*s == '+') ? INFINITY : -INFINITY;
+				st = _json_cmp_string(st, e, X_T("infinity"));
+				if (st != nullptr)
+				{
+					ret = m_Alloctor.alloc();
+					ret->type = JSONT_Double;
+					ret->f = (*s == '+') ? INFINITY : -INFINITY;
+				}
+				s = st;
+				break;
 			}
-			s = st;
-			break;
 		}
-	}
 	case '0':
 	case '1':
 	case '2':
@@ -383,10 +470,44 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	case '8':
 	case '9':
 	case '.':	//json5
-	{
-		ret = parse_number(s, e);
-	}
-	break;
+		{
+			ret = parse_number(s, e);
+		}
+		break;
+	case ',':
+		{
+			set_error("extra comma.");
+		}
+		break;
+	default:
+		{
+#if JSON_ENABLE_JSON5
+		__label_as_string:
+			if (_json_is_name(*s))
+			{
+				JSON_Value::Name name;
+				s = _json_collect_name(s, e, name);
+				if (s != nullptr)
+				{
+					if (name.end - name.start > (std::numeric_limits<int32_t>::max)())
+					{
+						set_error("string length exceeds 2147483648.");
+					}
+					else
+					{
+
+						ret = m_Alloctor.alloc();
+						ret->type = JSONT_String;
+						ret->slen = name.end - name.start;
+						ret->str = name.start;
+					}
+				}
+			}
+#else
+			set_error("illegal expression.");
+#endif
+		}
+		break;
 	}
 
 	psz = s;
@@ -398,7 +519,11 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 	parent->elements = nullptr;
 
 	s = _json_shift_space(s, e);
-	if (s >= e) return nullptr;
+	if (s >= e)
+	{
+		set_error("unclosed object.");
+		return nullptr;
+	}
 	if (*s == '}')
 	{//empty object
 		++s;
@@ -409,7 +534,11 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 	while ((ret = parse_pair(s, e)) != nullptr)
 	{
 		s = _json_shift_space(s, e);
-		if (s >= e) return nullptr;
+		if (s >= e)
+		{
+			set_error("unclosed object.");
+			return nullptr;
+		}
 
 		ret->next = parent->elements;
 		parent->elements = ret;
@@ -424,20 +553,34 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 			++s;
 
 			s = _json_shift_space(s, e);
-			if (s >= e) return nullptr;
-#if JSON_ENABLE_JSON5
+			if (s >= e)
+			{
+				set_error("unclosed object.");
+				return nullptr;
+			}
 			if (*s == '}')
 			{
+#if JSON_ENABLE_JSON5
 				++s;
 				return parent;
-			}
+#else
+				set_error("extra comma.");
+				return nullptr;
 #endif
+			}
 			continue;
 		}
 		else
 		{
+			set_error("missing comma.");
 			return nullptr;
 		}
+	}
+
+	if (parent->elements == nullptr)
+	{
+		if(m_pError == nullptr)
+			set_error("missing value.");
 	}
 	return nullptr;
 }
@@ -447,21 +590,29 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 	parent->elements = nullptr;
 
 	s = _json_shift_space(s, e);
-	if (s >= e) return nullptr;
+	if (s >= e)
+	{
+		set_error("unclosed array.");
+		return nullptr;
+	}
 	if (*s == ']')
 	{//empty array
 		++s;
 		return parent;
 	}
 
-	JSON_Value * pValue;
-	while ((pValue = parse_value(s, e)) != nullptr)
+	JSON_Value * ret;
+	while ((ret = parse_value(s, e)) != nullptr)
 	{
 		s = _json_shift_space(s, e);
-		if (s >= e) return nullptr;
+		if (s >= e)
+		{
+			set_error("unclosed array.");
+			return nullptr;
+		}
 
-		pValue->next = parent->elements;
-		parent->elements = pValue;
+		ret->next = parent->elements;
+		parent->elements = ret;
 
 		if (*s == ']')
 		{
@@ -473,22 +624,35 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 			++s;
 
 			s = _json_shift_space(s, e);
-			if (s >= e) return nullptr;
-#if JSON_ENABLE_JSON5
+			if (s >= e)
+			{
+				set_error("unclosed array.");
+				return nullptr;
+			}
 			if (*s == ']')
 			{
+#if JSON_ENABLE_JSON5
 				++s;
 				return parent;
-			}
+#else
+				set_error("extra comma.");
+				return nullptr;
 #endif
+			}
 			continue;
 		}
 		else
 		{
+			set_error("missing comma.");
 			return nullptr;
 		}
 	}
 
+	if (parent->elements == nullptr)
+	{
+		if (m_pError == nullptr)
+			set_error("missing value.");
+	}
 	return nullptr;
 }
 
@@ -510,6 +674,16 @@ JSON_Value * JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
 
 		return ret;
 	}
+
+	if (s >= e)
+	{
+		set_error("unexpected end.");
+	}
+	else
+	{
+		set_error("string length exceeds 2147483648.");
+	}
+
 	return nullptr;
 }
 
@@ -569,107 +743,126 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 {
 	bool minus = false;
 	LPCXSTR s = psz;
-#if JSON_FAST_STRTOD
-	LPCXSTR startscane = s;
-#endif
 
 	if (*s == '+')
 	{//+开头，十进制或者浮点数
 		++s;
-		if (s >= e) RET_NULL;
+		if (s >= e)
+		{
+			set_error("unexpected end.");
+			RET_NULL;
+		}
 	}
 	else if (*s == '-')
 	{//-开头，十进制或者浮点数
 		++s;
-		if (s >= e) RET_NULL;
+		if (s >= e)
+		{
+			set_error("unexpected end.");
+			RET_NULL;
+		}
 		minus = true;
 	}
 	else if (*s == '0' && s + 1 < e)
 	{//0开头，可能是0，十六进制，二进制，八进制
-		if (_json_hex_leader(s[1]))
-		{//0x，十六进制
-			s += 2;
-			if (s >= e) RET_NULL;
+		if (s[1] != '.' && s[1] != 'e' && s[1] != 'E')
+		{
+			if (_json_hex_leader(s[1]))
+			{//0x，十六进制
+#if JSON_ENABLE_JSON5
+				s += 2;
+				if (s >= e) RET_NULL;
 
-			uint64_t i64 = 0;
-			while (s < e && _json_is_hex(*s) && i64 <= 0x0fffffffffffffffULL)
-			{
-				int32_t i = *s++;
-				if (_json_is_digit(i))
+				uint64_t i64 = 0;
+				while (s < e && _json_is_hex(*s) && i64 <= 0x0fffffffffffffffULL)
+				{
+					int32_t i = *s++;
+					if (_json_is_digit(i))
+						i = i - '0';
+					else if (i >= 'a' && i <= 'f')
+						i = i - 'a' + 10;
+					else
+						i = i - 'A' + 10;
+
+					i64 = (i64 << 4) | i;
+				}
+
+				JSON_Value* ret = m_Alloctor.alloc();
+				ret->type = JSONT_HexLong;
+				ret->l = i64;
+
+				psz = s;
+				return ret;
+#else
+				set_error("numbers cannot be hex.");
+				return nullptr;
+#endif
+			}
+			else if (_json_bin_leader(s[1]))
+			{//0b，二进制
+#if JSON_ENABLE_JSON5
+				s += 2;
+				if (s >= e) RET_NULL;
+
+				uint64_t i64 = 0;
+				while (s < e && _json_is_hex(*s) && i64 <= 0x7fffffffffffffffULL)
+				{
+					int32_t i = *s++;
 					i = i - '0';
-				else if (i >= 'a' && i <= 'f')
-					i = i - 'a' + 10;
-				else
-					i = i - 'A' + 10;
 
-				i64 = (i64 << 4) | i;
+					i64 = (i64 << 1) | i;
+				}
+
+				JSON_Value* ret = m_Alloctor.alloc();
+				ret->type = JSONT_BinaryLong;
+				ret->l = i64;
+
+				psz = s;
+				return ret;
+#else
+				set_error("numbers cannot be binary.");
+				return nullptr;
+#endif
 			}
+			else if (_json_is_oct(s[1]))
+			{//0[1-7]，八进制
+#if JSON_ENABLE_JSON5
+				s += 1;
 
-			JSON_Value * ret = m_Alloctor.alloc();
-			ret->type = JSONT_HexLong;
-			ret->l = i64;
+				uint64_t i64 = 0;
+				while (s < e && _json_is_oct(*s) && i64 < 0x7fffffffffffffffULL)
+				{
+					int32_t i = *s++;
+					i = i - '0';
 
-			psz = s;
-			return ret;
-		}
-		else if (_json_bin_leader(s[1]))
-		{//0b，二进制
-			s += 2;
-			if (s >= e) RET_NULL;
+					i64 = (i64 << 3) | i;
+				}
 
-			uint64_t i64 = 0;
-			while (s < e && _json_is_hex(*s) && i64 <= 0x7fffffffffffffffULL)
-			{
-				int32_t i = *s++;
-				i = i - '0';
+				JSON_Value* ret = m_Alloctor.alloc();
+				ret->type = JSONT_OctalLong;
+				ret->l = i64;
 
-				i64 = (i64 << 1) | i;
+				psz = s;
+				return ret;
+#else
+				set_error("numbers cannot be octal.");
+				return nullptr;
+#endif
 			}
-
-			JSON_Value * ret = m_Alloctor.alloc();
-			ret->type = JSONT_BinaryLong;
-			ret->l = i64;
-
-			psz = s;
-			return ret;
-		}
-		else if (_json_is_oct(s[1]))
-		{//0[1-7]，八进制
-			s += 1;
-
-			uint64_t i64 = 0;
-			while (s < e && _json_is_oct(*s) && i64 < 0x7fffffffffffffffULL)
-			{
-				int32_t i = *s++;
-				i = i - '0';
-
-				i64 = (i64 << 3) | i;
+			else if (_json_is_digit(s[1]))
+			{//089
+#if !JSON_ENABLE_JSON5
+				set_error("numbers cannot have leading zeroes.");
+				return nullptr;
+#endif
 			}
-
-			JSON_Value * ret = m_Alloctor.alloc();
-			ret->type = JSONT_OctalLong;
-			ret->l = i64;
-
-			psz = s;
-			return ret;
-		}
-		else if (s[1] != '.')
-		{//0
-			JSON_Value * ret = m_Alloctor.alloc();
-			ret->type = JSONT_DecimalLong;
-			ret->l = 0;
-
-			psz = s + 1;
-			return ret;
 		}
 	}
 
 	//十进制整数或者浮点数
 	uint64_t i64 = 0;
-#if !JSON_FAST_STRTOD
 	double d = 0.0;
 	int significandDigit = 0;
-#endif
 
 	bool useDouble = false;
 	while (s < e && _json_is_digit(*s))
@@ -678,9 +871,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		{
 			if (i64 != 0x0CCCCCCCCCCCCCCCULL || *s >= '8')
 			{
-#if !JSON_FAST_STRTOD
 				d = static_cast<double>(i64);
-#endif
 				useDouble = true;
 				break;
 			}
@@ -688,18 +879,18 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 
 		//i64 = i64 * 10 + (*s++ - '0');
 		i64 = (i64 << 3) + (i64 << 1) + (*s++ - '0');
-#if !JSON_FAST_STRTOD
 		significandDigit++;
-#endif
 	}
 
-#if !JSON_FAST_STRTOD
 	if (useDouble)
 	{
 		while (s < e && _json_is_digit(*s))
 		{
 			if (d >= 1.7976931348623157e307)	// DBL_MAX / 10.0
-				RET_NULL;
+			{
+				set_error("numbers out of range.");
+				return nullptr;
+			}
 
 			d = d * 10.0 + (*s++ - '0');
 		}
@@ -709,7 +900,11 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 	if (s < e && *s == '.')
 	{
 		++s;
-		if (s >= e) RET_NULL;
+		if (s >= e)
+		{
+			set_error("unexpected end.");
+			RET_NULL;
+		}
 
 		//if (!_json_is_digit(*s)) RET_NULL;
 
@@ -792,13 +987,17 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 					//exp = exp * 10 + (*s++ - '0');
 					exp = (exp << 3) + (exp << 1) + (*s++ - '0');
 					if (exp > maxExp)
-						RET_NULL;
+					{
+						set_error("numbers out of range.");
+						return nullptr;
+					}
 				}
 			}
 		}
 		else
 		{
-			RET_NULL;
+			set_error("illegal number.");
+			return nullptr;
 		}
 
 		if (expMinus)
@@ -824,46 +1023,135 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		else
 			ret->l = static_cast<int64_t>(i64);
 	}
-	
-#else
-
-	if (!useDouble && s < e)
-	{
-		if (*s == '.' || (*s | 32) == 'e')
-		{
-			useDouble = true;
-		}
-	}
-
-	JSON_Value * ret = nullptr;
-	if (useDouble)
-	{
-		ret = m_Alloctor.alloc();
-		ret->type = JSONT_Double;
-		ret->f = _tcstod_fast(startscane, (XCHAR **)&s);
-	}
-	else
-	{
-		ret = m_Alloctor.alloc();
-		ret->type = JSONT_DecimalLong;
-		if (minus)
-			ret->l = static_cast<int64_t>(~i64 + 1);
-		else
-			ret->l = static_cast<int64_t>(i64);
-	}
-#endif
 
 	psz = s;
 	return ret;
 }
 
-VFX_API size_t JSON_ElementsCount(const JSON_Value& jv)
+VFX_API size_t JSON_ElementsCount(const JSON_Value* jv)
 {
-	if (jv.type == JSONT_Object || jv.type == JSONT_Array)
+	if (jv->type == JSONT_Object || jv->type == JSONT_Array)
 	{
 		size_t nCount = 0;
-		for (JSON_Value* e = jv.elements; e != nullptr; e = e->next) ++nCount;
+		for (JSON_Value* e = jv->elements; e != nullptr; e = e->next) ++nCount;
 		return nCount;
 	}
 	return 0;
+}
+
+VFX_API LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e)
+{
+	LPXSTR psz = pszStart;
+	for (; s < e; ++s)
+	{
+		if (*s == '\\')
+		{
+			++s;
+			if (s < e)
+			{
+				switch (*s)
+				{
+				default: *psz++ = *s;  break;
+				case 'b':*psz++ = '\b'; break;
+				case 'f':*psz++ = '\f'; break;
+				case 't':*psz++ = '\t'; break;
+				case 'n':*psz++ = '\n'; break;
+				case '\n':*psz++ = '\n'; break;
+				case 'r':*psz++ = '\r'; break;
+				case '\r':*psz++ = '\r'; break;
+				case 'u':
+					if (s + 4 < e)
+					{
+						++s;
+						uint32_t wc = 0;
+						for (size_t k = 0; k < 4; ++k)
+						{
+							uint32_t c = *s++;
+
+							if (c >= '0' && c <= '9')
+								c = c - '0';
+							else if (c >= 'a' && c <= 'f')
+								c = c - 'a' + 10;
+							else if (c >= 'A' && c <= 'F')
+								c = c - 'A' + 10;
+							else
+							{
+								wc = 0;
+								break;
+							}
+
+							wc = (wc << 4) | c;
+						}
+						--s;
+
+						if (wc != 0)
+						{
+#pragma warning(disable : 4244)
+							if (sizeof(*psz) == sizeof(char))
+							{
+								char buffer[8];
+								int nCvt = sizeof(buffer);
+								wctomb_s(&nCvt, buffer, sizeof(buffer), wc);
+								for (int x = 0; x < nCvt; ++x)
+									*psz++ = buffer[x];
+							}
+							else if (sizeof(*psz) == sizeof(char16_t))
+							{
+								*psz++ = wc;
+								if (wc > 0xffffu)
+									*psz++ = wc >> 16;
+							}
+							else if (sizeof(*psz) == sizeof(char32_t))
+							{
+								*psz++ = (char32_t)wc + 0x10000;
+							}
+							else
+							{
+								assert(false);
+							}
+#pragma warning(default : 4244)
+						}
+					}
+					break;	//\u5efa\u7b51 TODO 处理Unicode的读取
+				}
+			}
+			else
+			{
+				*psz++ = '\\';
+			}
+		}
+		else
+		{
+			*psz++ = *s;
+		}
+	}
+
+	return psz;
+}
+
+VFX_API std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv)
+{
+	std::basic_string<XCHAR> name;
+
+	name.resize(jv->nlen * 2);
+	auto e = JSON_LoadString(const_cast<XCHAR*>(name.data()), jv->name, jv->name + jv->nlen);
+	*e = 0;
+	name.resize(e - name.data());
+
+	return name;
+}
+
+VFX_API std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv)
+{
+	std::basic_string<XCHAR> name;
+
+	if (JSON_GetType(jv) == JSON_Type::JSONT_String)
+	{
+		name.resize(jv->slen * 2);
+		auto e = JSON_LoadString(const_cast<XCHAR*>(name.data()), jv->str, jv->str + jv->slen);
+		*e = 0;
+		name.resize(e - name.data());
+	}
+
+	return name;
 }

@@ -32,7 +32,11 @@ inline JSON_Type JSON_GetType(const JSON_Value* jv)
 	return (JSON_Type)(jv->type & JSON_Type::JSONT_LONG_MASK);
 }
 
-VFX_API size_t JSON_ElementsCount(const JSON_Value& jv);
+VFX_API size_t JSON_ElementsCount(const JSON_Value* jv);
+VFX_API LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e);
+VFX_API std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv);
+VFX_API std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv);
+
 
 template<class _Vistor>
 void JSON_ForeachElements(const JSON_Value* jv, const _Vistor& vistor)
@@ -97,8 +101,9 @@ struct JSON_Parser
 	*/
 	VFX_API JSON_Value * Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd = NULL);
 
-	const JSON_Value * GetRootValue() const { return m_pRootValue; }
-	size_t AllocedCount() const { return m_Alloctor.size(); }
+	const JSON_Value * Value() const { return m_pRootValue; }
+	size_t Count() const { return m_Alloctor.size(); }
+	const char* Error() const { return m_pError; }
 
 	VFX_API JSON_Parser();
 	VFX_API ~JSON_Parser();
@@ -113,6 +118,10 @@ private:
 	JSON_Value * parse_string(LPCXSTR& s, LPCXSTR e, int nEndChar);
 	JSON_Value * parse_number(LPCXSTR& s, LPCXSTR e);
 
+	LPCXSTR _json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name& name);
+	void set_error(const char* e);
+
 	JSON_Alloctor		m_Alloctor;
 	JSON_Value *		m_pRootValue;
+	const char*			m_pError;
 };
