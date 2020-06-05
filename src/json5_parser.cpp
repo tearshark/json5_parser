@@ -15,12 +15,12 @@ static char __json_char_flag[256];
 
 enum json_char_flag
 {
-	jsoncf_digit = 0x01,		//数字
-	jsoncf_bin = 0x02,			//2进制数字
-	jsoncf_oct = 0x04,			//8进制数字
-	jsoncf_hex = 0x08,			//16进制数字
-	jsoncf_space = 0x10,		//空白字符
-	jsoncf_name = 0x80,			//可以用作名称
+	jsoncf_digit = 0x01,		//鏁板瓧
+	jsoncf_bin = 0x02,			//2杩涘埗鏁板瓧
+	jsoncf_oct = 0x04,			//8杩涘埗鏁板瓧
+	jsoncf_hex = 0x08,			//16杩涘埗鏁板瓧
+	jsoncf_space = 0x10,		//绌虹櫧瀛楃
+	jsoncf_name = 0x80,			//鍙互鐢ㄤ綔鍚嶇О
 };
 
 static void _json_init_char_flag()

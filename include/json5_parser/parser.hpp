@@ -1,4 +1,4 @@
-
+﻿
 struct alignas(32) JSON_Value
 {
 	JSON_Type				type;
@@ -94,10 +94,10 @@ long  => binary | octal | decimal | hex | true | false | null
 struct JSON_Parser
 {
 	/*
-	����JSON��ʽ���ַ���
-	�ڷ�����Ϻ�JSON_Value���ĵ�ַ��Ȼ�ǲ���pszָ����ڴ��
-	��ˣ�Ҫʹ�÷�����Ľ������Ҫ����psz��Ȼ����Ч��
-	JSON_Parse��ᱣ�����pszָ�룬��������psz�ڴ���ͷ�
+	分析JSON格式的字符串
+	在分析完毕后，JSON_Value里存的地址仍然是参数psz指向的内存快
+	因此，要使用分析后的结果，需要保持psz仍然是有效的
+	JSON_Parse类会保存参数psz指针，但不管理psz内存的释放
 	*/
 	VFX_API JSON_Value * Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd = NULL);
 

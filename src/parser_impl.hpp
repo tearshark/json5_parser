@@ -1,4 +1,4 @@
-//2018-01-09  Ö§³Ö JSON5 ¹æ·¶
+ï»¿//2018-01-09  æ”¯æŒ JSON5 è§„èŒƒ
 
 JSON_Alloctor::JSON_Alloctor(size_t nNumBatch/* = 4*/)
 	: m_pNextAlloc(nullptr)
@@ -79,7 +79,7 @@ static inline  size_t _json_is_hex(int c) { JSON_U(c, 0);return _json_is_flag(c,
 static inline  size_t _json_hex_leader(int c) { return c == 'x' || c == 'X'; }
 static inline  size_t _json_bin_leader(int c) { return c == 'b' || c == 'B'; }
 
-//ÌáÈ¡Ãû³Æ
+//æå–åç§°
 LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name & name)
 {
 	int nEndChar = 0;
@@ -120,8 +120,8 @@ LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name
 	return _s;
 }
 
-//Ìø¹ıÆğÊ¼µÄ¿Õ°××Ö·û
-//Ìø¹ı×¢ÊÍ(json5)
+//è·³è¿‡èµ·å§‹çš„ç©ºç™½å­—ç¬¦
+//è·³è¿‡æ³¨é‡Š(json5)
 static inline LPCXSTR _json_shift_space(LPCXSTR _s, LPCXSTR _e)
 {
 #if JSON5_ENABLE_COMMENTS
@@ -178,7 +178,7 @@ static inline LPCXSTR _json_shift_space(LPCXSTR _s, LPCXSTR _e)
 #endif
 }
 
-//²»Çø·Ö´óĞ¡Ğ´µÄ±È½Ï×Ö·û´®
+//ä¸åŒºåˆ†å¤§å°å†™çš„æ¯”è¾ƒå­—ç¬¦ä¸²
 static inline LPCXSTR _json_cmp_string(LPCXSTR _s, LPCXSTR _e, LPCXSTR psz)
 {
 	while ((_s < _e) && *psz && ((isupper(*(const XUCHAR*)_s) ? tolower(*_s) : *_s) == *psz))
@@ -745,7 +745,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 	LPCXSTR s = psz;
 
 	if (*s == '+')
-	{//+¿ªÍ·£¬Ê®½øÖÆ»òÕß¸¡µãÊı
+	{//+å¼€å¤´ï¼Œåè¿›åˆ¶æˆ–è€…æµ®ç‚¹æ•°
 		++s;
 		if (s >= e)
 		{
@@ -754,7 +754,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		}
 	}
 	else if (*s == '-')
-	{//-¿ªÍ·£¬Ê®½øÖÆ»òÕß¸¡µãÊı
+	{//-å¼€å¤´ï¼Œåè¿›åˆ¶æˆ–è€…æµ®ç‚¹æ•°
 		++s;
 		if (s >= e)
 		{
@@ -764,11 +764,11 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		minus = true;
 	}
 	else if (*s == '0' && s + 1 < e)
-	{//0¿ªÍ·£¬¿ÉÄÜÊÇ0£¬Ê®Áù½øÖÆ£¬¶ş½øÖÆ£¬°Ë½øÖÆ
+	{//0å¼€å¤´ï¼Œå¯èƒ½æ˜¯0ï¼Œåå…­è¿›åˆ¶ï¼ŒäºŒè¿›åˆ¶ï¼Œå…«è¿›åˆ¶
 		if (s[1] != '.' && s[1] != 'e' && s[1] != 'E')
 		{
 			if (_json_hex_leader(s[1]))
-			{//0x£¬Ê®Áù½øÖÆ
+			{//0xï¼Œåå…­è¿›åˆ¶
 #if JSON_ENABLE_JSON5
 				s += 2;
 				if (s >= e) RET_NULL;
@@ -799,7 +799,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 #endif
 			}
 			else if (_json_bin_leader(s[1]))
-			{//0b£¬¶ş½øÖÆ
+			{//0bï¼ŒäºŒè¿›åˆ¶
 #if JSON_ENABLE_JSON5
 				s += 2;
 				if (s >= e) RET_NULL;
@@ -825,7 +825,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 #endif
 			}
 			else if (_json_is_oct(s[1]))
-			{//0[1-7]£¬°Ë½øÖÆ
+			{//0[1-7]ï¼Œå…«è¿›åˆ¶
 #if JSON_ENABLE_JSON5
 				s += 1;
 
@@ -859,7 +859,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		}
 	}
 
-	//Ê®½øÖÆÕûÊı»òÕß¸¡µãÊı
+	//åè¿›åˆ¶æ•´æ•°æˆ–è€…æµ®ç‚¹æ•°
 	uint64_t i64 = 0;
 	double d = 0.0;
 	int significandDigit = 0;
@@ -1113,7 +1113,7 @@ VFX_API LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e)
 #pragma warning(default : 4244)
 						}
 					}
-					break;	//\u5efa\u7b51 TODO ´¦ÀíUnicodeµÄ¶ÁÈ¡
+					break;	//\u5efa\u7b51 TODO å¤„ç†Unicodeçš„è¯»å–
 				}
 			}
 			else
