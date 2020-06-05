@@ -2,7 +2,11 @@
 #include <ctype.h>
 #include <string>
 #include <algorithm>
+#include <cstring>
 #include <new>
+#include <cmath>
+#include <memory>
+#include <string.h>
 #include "json5_parser/const_def.h"
 #include "json5_parser/config.h"
 
