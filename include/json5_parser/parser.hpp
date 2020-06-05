@@ -43,7 +43,7 @@ template<class _Vistor>
 void JSON_ForeachElements(const JSON_Value* jv, const _Vistor& vistor)
 {
 	if (JSON_GetType(jv) == JSON_Type::Object || JSON_GetType(jv) == JSON_Type::Array)
-		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->next)
+		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->prev)
 		{
 			vistor(e);
 		}
