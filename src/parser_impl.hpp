@@ -191,8 +191,6 @@ static inline LPCXSTR _json_cmp_string(LPCXSTR _s, LPCXSTR _e, LPCXSTR psz)
 
 JSON_Value * JSON_Parser::Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd/* = nullptr*/)
 {
-	_json_init_char_flag();
-
 	m_Alloctor.clear(nNunBatch);
 	m_pRootValue = nullptr;
 
@@ -269,14 +267,14 @@ JSON_Value * JSON_Parser::parse_start(LPCXSTR& psz, LPCXSTR e)
 	{
 		++s;
 		ret = m_Alloctor.alloc();
-		ret->type = JSONT_Object;
+		ret->type = JSON_Type::Object;
 		ret = parse_object(ret, s, e);
 	}
 	else if(*s == '[')
 	{
 		++s;
 		ret = m_Alloctor.alloc();
-		ret->type = JSONT_Array;
+		ret->type = JSON_Type::Array;
 		ret = parse_array(ret, s, e);
 	}
 	else
@@ -303,7 +301,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			ret = parse_object(m_Alloctor.alloc(), s, e);
 			if (ret != nullptr)
 			{
-				ret->type = JSONT_Object;
+				ret->type = JSON_Type::Object;
 			}
 		}
 		break;
@@ -313,7 +311,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			ret = parse_array(m_Alloctor.alloc(), s, e);
 			if (ret != nullptr)
 			{
-				ret->type = JSONT_Array;
+				ret->type = JSON_Type::Array;
 			}
 		}
 		break;
@@ -342,7 +340,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			if (st != nullptr)
 			{
 				ret = m_Alloctor.alloc();
-				ret->type = JSONT_Boolean;
+				ret->type = JSON_Type::Boolean;
 				ret->i = 1;
 				s = st;
 			}
@@ -363,7 +361,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			if (st != nullptr)
 			{
 				ret = m_Alloctor.alloc();
-				ret->type = JSONT_Boolean;
+				ret->type = JSON_Type::Boolean;
 				ret->i = 0;
 				s = st;
 			}
@@ -384,7 +382,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			if (st != nullptr)
 			{
 				ret = m_Alloctor.alloc();
-				ret->type = JSONT_Nullptr;
+				ret->type = JSON_Type::Nullptr;
 				s = st;
 			}
 			else
@@ -393,7 +391,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				if (st != nullptr)
 				{
 					ret = m_Alloctor.alloc();
-					ret->type = JSONT_Double;
+					ret->type = JSON_Type::Double;
 					ret->f = NAN;
 					s = st;
 				}
@@ -415,7 +413,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			if (st != nullptr)
 			{
 				ret = m_Alloctor.alloc();
-				ret->type = JSONT_Double;
+				ret->type = JSON_Type::Double;
 				ret->f = INFINITY;
 				s = st;
 			}
@@ -440,7 +438,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				if (st != nullptr)
 				{
 					ret = m_Alloctor.alloc();
-					ret->type = JSONT_Double;
+					ret->type = JSON_Type::Double;
 					ret->f = (*s == '+') ? NAN : -NAN;
 				}
 				s = st;
@@ -452,7 +450,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				if (st != nullptr)
 				{
 					ret = m_Alloctor.alloc();
-					ret->type = JSONT_Double;
+					ret->type = JSON_Type::Double;
 					ret->f = (*s == '+') ? INFINITY : -INFINITY;
 				}
 				s = st;
@@ -497,7 +495,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 					{
 
 						ret = m_Alloctor.alloc();
-						ret->type = JSONT_String;
+						ret->type = JSON_Type::String;
 						ret->slen = name.end - name.start;
 						ret->str = name.start;
 					}
@@ -540,7 +538,7 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 			return nullptr;
 		}
 
-		ret->next = parent->elements;
+		ret->prev = parent->elements;
 		parent->elements = ret;
 
 		if (*s == '}')
@@ -611,7 +609,7 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 			return nullptr;
 		}
 
-		ret->next = parent->elements;
+		ret->prev = parent->elements;
 		parent->elements = ret;
 
 		if (*s == ']')
@@ -666,7 +664,7 @@ JSON_Value * JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
 	if (s < e && (s - psz) <= (std::numeric_limits<int32_t>::max)())
 	{
 		JSON_Value * ret = m_Alloctor.alloc();
-		ret->type = JSONT_String;
+		ret->type = JSON_Type::String;
 		ret->slen = static_cast<int32_t>(s - psz);
 		ret->str = psz;
 
@@ -733,7 +731,7 @@ int64_t JSON_Parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType)
 		while (s < e && _json_is_hex(*s)) s++;
 
 	int64_t lValue = _xcstoll(scanstart, (LPXSTR *)&s, _Radix);
-	eType = JSON_Type(JSONT_Long | ((_Radix - 1) << 4));
+	eType = JSON_Type::Long | (JSON_Type)((_Radix - 1) << 4);
 	psz = s;
 
 	return lValue;
@@ -788,7 +786,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				}
 
 				JSON_Value* ret = m_Alloctor.alloc();
-				ret->type = JSONT_HexLong;
+				ret->type = JSON_Type::HexLong;
 				ret->l = i64;
 
 				psz = s;
@@ -814,7 +812,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				}
 
 				JSON_Value* ret = m_Alloctor.alloc();
-				ret->type = JSONT_BinaryLong;
+				ret->type = JSON_Type::BinaryLong;
 				ret->l = i64;
 
 				psz = s;
@@ -839,7 +837,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				}
 
 				JSON_Value* ret = m_Alloctor.alloc();
-				ret->type = JSONT_OctalLong;
+				ret->type = JSON_Type::OctalLong;
 				ret->l = i64;
 
 				psz = s;
@@ -1011,13 +1009,13 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		d = StrtodNormalPrecision(d, p);
 
 		ret = m_Alloctor.alloc();
-		ret->type = JSONT_Double;
+		ret->type = JSON_Type::Double;
 		ret->f = minus ? -d : d;
 	}
 	else
 	{
 		ret = m_Alloctor.alloc();
-		ret->type = JSONT_DecimalLong;
+		ret->type = JSON_Type::DecimalLong;
 		if (minus)
 			ret->l = static_cast<int64_t>(~i64 + 1);
 		else
@@ -1028,18 +1026,18 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 	return ret;
 }
 
-VFX_API size_t JSON_ElementsCount(const JSON_Value* jv)
+size_t JSON_ElementsCount(const JSON_Value* jv)
 {
-	if (jv->type == JSONT_Object || jv->type == JSONT_Array)
+	if (jv->type == JSON_Type::Object || jv->type == JSON_Type::Array)
 	{
 		size_t nCount = 0;
-		for (JSON_Value* e = jv->elements; e != nullptr; e = e->next) ++nCount;
+		for (JSON_Value* e = jv->elements; e != nullptr; e = e->prev) ++nCount;
 		return nCount;
 	}
 	return 0;
 }
 
-VFX_API LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e)
+LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e)
 {
 	LPXSTR psz = pszStart;
 	for (; s < e; ++s)
@@ -1130,26 +1128,28 @@ VFX_API LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e)
 	return psz;
 }
 
-VFX_API std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv)
+std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv)
 {
 	std::basic_string<XCHAR> name;
 
-	name.resize(jv->nlen * 2);
+	name.resize(jv->nlen);
 	auto e = JSON_LoadString(const_cast<XCHAR*>(name.data()), jv->name, jv->name + jv->nlen);
+	assert(e - name.data() <= jv->nlen);
 	*e = 0;
 	name.resize(e - name.data());
 
 	return name;
 }
 
-VFX_API std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv)
+std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv)
 {
 	std::basic_string<XCHAR> name;
 
-	if (JSON_GetType(jv) == JSON_Type::JSONT_String)
+	if (JSON_GetType(jv) == JSON_Type::String)
 	{
-		name.resize(jv->slen * 2);
+		name.resize(jv->slen);
 		auto e = JSON_LoadString(const_cast<XCHAR*>(name.data()), jv->str, jv->str + jv->slen);
+		assert(e - name.data() <= jv->slen);
 		*e = 0;
 		name.resize(e - name.data());
 	}

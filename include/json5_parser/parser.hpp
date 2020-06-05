@@ -2,23 +2,24 @@
 struct alignas(32) JSON_Value
 {
 	JSON_Type				type;
-	uint16_t				nlen;
-	uint32_t				slen;
+	uint16_t				nlen;			//Length of name.
+	uint32_t				slen;			//Length of str, when type equal JSON_Type::String.
 
 	union alignas(8)
 	{
-		JSON_Value*			elements;
-		LPCXSTR				str;
-		double				f;
-		int64_t				l;
-		int32_t				i;
+		JSON_Value*			elements;		//Last child, when type equal JSON_Type::Object or JSON_Type::Array. 
+											//This means that the order of children is reversed.
+		LPCXSTR				str;			//Valid when type equal JSON_Type::String.
+		double				f;				//Valid when type equal JSON_Type::Double.
+		int64_t				l;				//Valid when type equal JSON_Type::Long.
+		int32_t				i;				//Valid when type equal JSON_Type::Boolean.
 	};
 	
 	alignas(8)
-	LPCXSTR 				name;
+	LPCXSTR 				name;			//Valid when the parent is an object.
 
 	alignas(8)
-	JSON_Value* 			next;
+	JSON_Value* 			prev;			//Previous sibling node, when the parent is an object or an array.
 
 	struct alignas(sizeof(void*) * 2) Name
 	{
@@ -29,19 +30,19 @@ struct alignas(32) JSON_Value
 
 inline JSON_Type JSON_GetType(const JSON_Value* jv)
 {
-	return (JSON_Type)(jv->type & JSON_Type::JSONT_LONG_MASK);
+	return (JSON_Type)(jv->type & JSON_Type::LONG_MASK);
 }
 
-VFX_API size_t JSON_ElementsCount(const JSON_Value* jv);
-VFX_API LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e);
-VFX_API std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv);
-VFX_API std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv);
+size_t JSON_ElementsCount(const JSON_Value* jv);
+LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e);
+std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv);
+std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv);
 
 
 template<class _Vistor>
 void JSON_ForeachElements(const JSON_Value* jv, const _Vistor& vistor)
 {
-	if (JSON_GetType(jv) == JSON_Type::JSONT_Object || JSON_GetType(jv) == JSON_Type::JSONT_Array)
+	if (JSON_GetType(jv) == JSON_Type::Object || JSON_GetType(jv) == JSON_Type::Array)
 		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->next)
 		{
 			vistor(e);
@@ -53,8 +54,8 @@ void JSON_Vistor(const JSON_Value* jv, const _Vistor& vistor, const JSON_Value* 
 {
 	vistor(jv, jparent);
 
-	if (JSON_GetType(jv) == JSON_Type::JSONT_Object || JSON_GetType(jv) == JSON_Type::JSONT_Array)
-		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->next)
+	if (JSON_GetType(jv) == JSON_Type::Object || JSON_GetType(jv) == JSON_Type::Array)
+		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->prev)
 		{
 			JSON_Vistor(e, vistor, jv);
 		}
@@ -69,8 +70,8 @@ struct JSON_Alloctor
 		return m_nAllocedCount;
 	}
 
-	VFX_API JSON_Alloctor(size_t nNumBatch = 4);
-	VFX_API ~JSON_Alloctor();
+	JSON_Alloctor(size_t nNumBatch = 4);
+	~JSON_Alloctor();
 private:
 	JSON_Value *		m_pNextAlloc;
 	JSON_Value *		m_pEndAlloc;
@@ -99,16 +100,16 @@ struct JSON_Parser
 	因此，要使用分析后的结果，需要保持psz仍然是有效的
 	JSON_Parse类会保存参数psz指针，但不管理psz内存的释放
 	*/
-	VFX_API JSON_Value * Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd = NULL);
+	JSON_Value * Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd = NULL);
 
 	const JSON_Value * Value() const { return m_pRootValue; }
 	size_t Count() const { return m_Alloctor.size(); }
 	const char* Error() const { return m_pError; }
 
-	VFX_API JSON_Parser();
-	VFX_API ~JSON_Parser();
+	JSON_Parser();
+	~JSON_Parser();
 
-	VFX_API static int64_t _parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType);
+	static int64_t _parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType);
 private:
 	JSON_Value * parse_start(LPCXSTR& s, LPCXSTR e);
 	JSON_Value * parse_pair(LPCXSTR& s, LPCXSTR e);

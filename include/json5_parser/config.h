@@ -5,8 +5,6 @@
 #endif	//JSON_ENABLE_JSON5
 
 #if JSON_ENABLE_JSON5
-#define JSON5_IF_ENABLE(x)		x
 #define JSON5_ENABLE_COMMENTS	1
 #else
-#define JSON5_IF_ENABLE(x)
 #endif	//JSON_ENABLE_JSON5

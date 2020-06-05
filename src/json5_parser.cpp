@@ -10,10 +10,27 @@ namespace json5
 {
 #include "json5_parser/xchar/xchar.h"
 
-static bool __json_char_init_flag = false;
-static char __json_char_flag[256];
+static const uint8_t __json_char_flag[256] =
+{
+	0x00,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x10,0x10,0x80,0x80,0x10,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x8f,0x8f,0x8d,0x8d,0x8d,0x8d,0x8d,0x8d,0x89,0x89,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x80,0x88,0x88,0x88,0x88,0x88,0x88,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x00,0x00,0x00,0x00,0x80,
+	0x00,0x88,0x88,0x88,0x88,0x88,0x88,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x00,0x00,0x00,0x00,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
+	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80, 
+};
 
-enum json_char_flag
+enum json_char_flag : uint8_t
 {
 	jsoncf_digit = 0x01,		//数字
 	jsoncf_bin = 0x02,			//2进制数字
@@ -23,79 +40,84 @@ enum json_char_flag
 	jsoncf_name = 0x80,			//可以用作名称
 };
 
-static void _json_init_char_flag()
+void _json_print_char_flag()
 {
-	if (__json_char_init_flag != false)
-		return;
+	uint8_t char_flag[256];
+	memset(char_flag, jsoncf_name, sizeof(char_flag));
 
-	memset(__json_char_flag, jsoncf_name, sizeof(__json_char_flag));
+	char_flag[0] &= ~jsoncf_name;
+	char_flag[' '] &= ~jsoncf_name;
+	char_flag['\t'] &= ~jsoncf_name;
+	char_flag['\r'] &= ~jsoncf_name;
+	char_flag['\n'] &= ~jsoncf_name;
 
-	__json_char_flag[0] &= ~jsoncf_name;
-	__json_char_flag[' '] &= ~jsoncf_name;
-	__json_char_flag['\t'] &= ~jsoncf_name;
-	__json_char_flag['\r'] &= ~jsoncf_name;
-	__json_char_flag['\n'] &= ~jsoncf_name;
+	char_flag['~'] &= ~jsoncf_name;
+	char_flag['`'] &= ~jsoncf_name;
+	char_flag['!'] &= ~jsoncf_name;
+	char_flag['#'] &= ~jsoncf_name;
+	char_flag['$'] &= ~jsoncf_name;
+	char_flag['%'] &= ~jsoncf_name;
+	char_flag['^'] &= ~jsoncf_name;
+	char_flag['&'] &= ~jsoncf_name;
+	char_flag['*'] &= ~jsoncf_name;
+	char_flag['('] &= ~jsoncf_name;
+	char_flag[')'] &= ~jsoncf_name;
+	char_flag['-'] &= ~jsoncf_name;
+	char_flag['+'] &= ~jsoncf_name;
+	char_flag['='] &= ~jsoncf_name;
+	char_flag['{'] &= ~jsoncf_name;
+	char_flag['}'] &= ~jsoncf_name;
+	char_flag['['] &= ~jsoncf_name;
+	char_flag[']'] &= ~jsoncf_name;
+	char_flag['|'] &= ~jsoncf_name;
+	char_flag['\\'] &= ~jsoncf_name;
+	char_flag[':'] &= ~jsoncf_name;
+	char_flag[';'] &= ~jsoncf_name;
+	char_flag['"'] &= ~jsoncf_name;
+	char_flag['\''] &= ~jsoncf_name;
+	char_flag['<'] &= ~jsoncf_name;
+	char_flag['>'] &= ~jsoncf_name;
+	char_flag[','] &= ~jsoncf_name;
+	char_flag['.'] &= ~jsoncf_name;
+	char_flag['?'] &= ~jsoncf_name;
+	char_flag['/'] &= ~jsoncf_name;
 
-	__json_char_flag['~'] &= ~jsoncf_name;
-	__json_char_flag['`'] &= ~jsoncf_name;
-	__json_char_flag['!'] &= ~jsoncf_name;
-	__json_char_flag['#'] &= ~jsoncf_name;
-	__json_char_flag['$'] &= ~jsoncf_name;
-	__json_char_flag['%'] &= ~jsoncf_name;
-	__json_char_flag['^'] &= ~jsoncf_name;
-	__json_char_flag['&'] &= ~jsoncf_name;
-	__json_char_flag['*'] &= ~jsoncf_name;
-	__json_char_flag['('] &= ~jsoncf_name;
-	__json_char_flag[')'] &= ~jsoncf_name;
-	__json_char_flag['-'] &= ~jsoncf_name;
-	__json_char_flag['+'] &= ~jsoncf_name;
-	__json_char_flag['='] &= ~jsoncf_name;
-	__json_char_flag['{'] &= ~jsoncf_name;
-	__json_char_flag['}'] &= ~jsoncf_name;
-	__json_char_flag['['] &= ~jsoncf_name;
-	__json_char_flag[']'] &= ~jsoncf_name;
-	__json_char_flag['|'] &= ~jsoncf_name;
-	__json_char_flag['\\'] &= ~jsoncf_name;
-	__json_char_flag[':'] &= ~jsoncf_name;
-	__json_char_flag[';'] &= ~jsoncf_name;
-	__json_char_flag['"'] &= ~jsoncf_name;
-	__json_char_flag['\''] &= ~jsoncf_name;
-	__json_char_flag['<'] &= ~jsoncf_name;
-	__json_char_flag['>'] &= ~jsoncf_name;
-	__json_char_flag[','] &= ~jsoncf_name;
-	__json_char_flag['.'] &= ~jsoncf_name;
-	__json_char_flag['?'] &= ~jsoncf_name;
-	__json_char_flag['/'] &= ~jsoncf_name;
+	char_flag[' '] |= jsoncf_space;
+	char_flag['\t'] |= jsoncf_space;
+	char_flag['\r'] |= jsoncf_space;
+	char_flag['\n'] |= jsoncf_space;
 
-	__json_char_flag[' '] |= jsoncf_space;
-	__json_char_flag['\t'] |= jsoncf_space;
-	__json_char_flag['\r'] |= jsoncf_space;
-	__json_char_flag['\n'] |= jsoncf_space;
+	char_flag['0'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex | jsoncf_bin;
+	char_flag['1'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex | jsoncf_bin;
+	char_flag['2'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
+	char_flag['3'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
+	char_flag['4'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
+	char_flag['5'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
+	char_flag['6'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
+	char_flag['7'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
+	char_flag['8'] |= jsoncf_digit | jsoncf_hex;
+	char_flag['9'] |= jsoncf_digit | jsoncf_hex;
+	char_flag['A'] |= jsoncf_hex;
+	char_flag['B'] |= jsoncf_hex;
+	char_flag['C'] |= jsoncf_hex;
+	char_flag['D'] |= jsoncf_hex;
+	char_flag['E'] |= jsoncf_hex;
+	char_flag['F'] |= jsoncf_hex;
+	char_flag['a'] |= jsoncf_hex;
+	char_flag['b'] |= jsoncf_hex;
+	char_flag['c'] |= jsoncf_hex;
+	char_flag['d'] |= jsoncf_hex;
+	char_flag['e'] |= jsoncf_hex;
+	char_flag['f'] |= jsoncf_hex;
 
-	__json_char_flag['0'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex | jsoncf_bin;
-	__json_char_flag['1'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex | jsoncf_bin;
-	__json_char_flag['2'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
-	__json_char_flag['3'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
-	__json_char_flag['4'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
-	__json_char_flag['5'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
-	__json_char_flag['6'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
-	__json_char_flag['7'] |= jsoncf_digit | jsoncf_oct | jsoncf_hex;
-	__json_char_flag['8'] |= jsoncf_digit | jsoncf_hex;
-	__json_char_flag['9'] |= jsoncf_digit | jsoncf_hex;
-	__json_char_flag['A'] |= jsoncf_hex;
-	__json_char_flag['B'] |= jsoncf_hex;
-	__json_char_flag['C'] |= jsoncf_hex;
-	__json_char_flag['D'] |= jsoncf_hex;
-	__json_char_flag['E'] |= jsoncf_hex;
-	__json_char_flag['F'] |= jsoncf_hex;
-	__json_char_flag['a'] |= jsoncf_hex;
-	__json_char_flag['b'] |= jsoncf_hex;
-	__json_char_flag['c'] |= jsoncf_hex;
-	__json_char_flag['d'] |= jsoncf_hex;
-	__json_char_flag['e'] |= jsoncf_hex;
-	__json_char_flag['f'] |= jsoncf_hex;
-
-	__json_char_init_flag = true;
+	for (int k = 0; k < 16; ++k)
+	{
+		for (int i = 0; i < 16; ++i)
+		{
+			printf("0x%02x,", char_flag[k * 16 + i]);
+		}
+		printf("\n");
+	}
 }
 
 static const double JSON_E[] =

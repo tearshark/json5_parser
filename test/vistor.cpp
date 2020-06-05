@@ -8,6 +8,24 @@ const int N = 100;
 
 using namespace json5;
 
+static void report_file_location(const char* path, const char* psz, const char* err)
+{
+	size_t line = 0, column = 0;
+	for (; psz < err; ++psz)
+	{
+		if (*psz == '\r')
+		{
+			++line;
+			column = 0;
+		}
+
+		if (*psz != '\n')
+			column++;
+	}
+
+	std::cout << path << "(" << (line + 1) << ") col " << (column + 1);
+}
+
 std::unique_ptr<char[]> load_json_from_file(json5::parser& parser, const char* path)
 {
 	FILE* file = fopen(path, "rb");
@@ -30,7 +48,9 @@ std::unique_ptr<char[]> load_json_from_file(json5::parser& parser, const char* p
 		char* newline = (char*)strchr(pszEnd, '\r');
 		if (newline != nullptr) *newline = 0;
 
-		std::cout << "error '" << parser.Error() << "' at:" << std::endl << pszEnd << std::endl;
+		report_file_location(path, psz, pszEnd);
+		//E:\github\json5_parser\test\vistor.cpp(25) : error C2065 : 'fclos' : undeclared identifier
+		std::cout << " : error '" << parser.Error() << "' at:" << std::endl << pszEnd << std::endl;
 	}
 	
 	if (jv == nullptr)
@@ -51,7 +71,7 @@ void json5_vistor(const char* path)
 		singlebyte::JSON_Vistor(parser.Value(), 
 			[](const json5::value* js, const json5::value* parent)
 			{
-				if (parent != nullptr && singlebyte::JSON_GetType(parent) == JSON_Type::JSONT_Object)
+				if (parent != nullptr && singlebyte::JSON_GetType(parent) == JSON_Type::Object)
 				{
 					auto name = singlebyte::JSON_GetName(js);
 					std::cout << "\"" << name << "\":";
@@ -59,19 +79,19 @@ void json5_vistor(const char* path)
 
 				switch (singlebyte::JSON_GetType(js))
 				{
-				case JSON_Type::JSONT_Nullptr:
+				case JSON_Type::Nullptr:
 					std::cout << "null";
 					break;
-				case JSON_Type::JSONT_String:
+				case JSON_Type::String:
 					std::cout << "\"" << singlebyte::JSON_GetString(js) << "\"";
 					break;
-				case JSON_Type::JSONT_Double:
+				case JSON_Type::Double:
 					std::cout << js->f;
 					break;
-				case JSON_Type::JSONT_Long:
+				case JSON_Type::Long:
 					std::cout << js->l;
 					break;
-				case JSON_Type::JSONT_Boolean:
+				case JSON_Type::Boolean:
 					std::cout << (js->i ? "true" : "false");
 					break;
 				default:
@@ -83,11 +103,19 @@ void json5_vistor(const char* path)
 	}
 }
 
+namespace json5
+{
+	void _json_print_char_flag();
+}
+
 int main(int argc, char* argv[])
 {
+	//json5::_json_print_char_flag();
+
 	for(int i = 1; i < argc; ++i)
 	{
 		json5_vistor(argv[i]);
 	}
+
 	return 0;
 }
