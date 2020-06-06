@@ -924,13 +924,14 @@ JSON_Value * JSON_Parser::parse_number(JSON_Value* ret, LPCXSTR& psz, LPCXSTR e)
 
 		if (!useDouble)
 		{
-			while (s < e && _json_is_digit(*s))
+			int dgt;
+			while (s < e && _json_is_digit(dgt = *s))
 			{
 				if (i64 <= 0x1FFFFFFFFFFFFFULL) //2^53 - 1 for fast path
 				{
-					int dgt = *s++ - '0';
+					++s;
 					--expFrac;
-					i64 = i64 * 10 + dgt;
+					i64 = i64 * 10 + dgt - '0';
 					if (i64 != 0)
 						significandDigit++;
 				}
@@ -944,13 +945,14 @@ JSON_Value * JSON_Parser::parse_number(JSON_Value* ret, LPCXSTR& psz, LPCXSTR e)
 			useDouble = true;
 		}
 
-		while (s < e && _json_is_digit(*s))
+		int dgt;
+		while (s < e && _json_is_digit(dgt = *s))
 		{
 			if (significandDigit < 17)
 			{
-				int dgt = *s - '0';
-				d = d * 10.0 + dgt;
 				--expFrac;
+				dgt -= '0';
+				d = d * 10.0 + dgt;
 				if (d > 0.0)
 					significandDigit++;
 			}
