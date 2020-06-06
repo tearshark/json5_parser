@@ -496,7 +496,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 
 						ret = m_Alloctor.alloc();
 						ret->type = JSON_Type::String;
-						ret->slen = name.end - name.start;
+						ret->slen = static_cast<uint32_t>(name.end - name.start);
 						ret->str = name.start;
 					}
 				}
