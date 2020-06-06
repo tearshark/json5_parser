@@ -64,7 +64,7 @@ JSON_Parser::~JSON_Parser()
 
 }
 
-void JSON_Parser::set_error(const char* e)
+void JSON_Parser::set_error(LPCXSTR e)
 {
 	m_pError = e;
 }
@@ -101,7 +101,7 @@ LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name
 			_s++;
 		else
 		{
-			set_error("keys must be quoted.");
+			set_error(X_T("keys must be quoted."));
 			return nullptr;
 		}
 	}
@@ -112,7 +112,7 @@ LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name
 		while (_s < _e && _json_is_name(*_s)) _s++;
 		name.end = _s;
 #else
-		set_error("keys must be quoted.");
+		set_error(X_T("keys must be quoted."));
 		return nullptr;
 #endif
 	}
@@ -211,7 +211,7 @@ JSON_Value * JSON_Parser::Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd
 		psz = _json_shift_space(psz, pszEnd);
 		if (psz != pszEnd)
 		{
-			set_error("more characters after the close.");
+			set_error(X_T("more characters after the close."));
 		}
 	}
 #endif
@@ -234,14 +234,14 @@ JSON_Value * JSON_Parser::parse_pair(LPCXSTR& psz, LPCXSTR e)
 	size_t nlen = name.end - name.start;
 	if (nlen > (std::numeric_limits<uint16_t>::max)())
 	{
-		set_error("key length exceeds 65535.");
+		set_error(X_T("key length exceeds 65535."));
 		RET_NULL;
 	}
 
 	s = _json_shift_space(s, e);
 	if (s >= e || (*s != ':' JSON5_IF_ENABLE(&& *s != '=')))
 	{
-		set_error("missing colon.");
+		set_error(X_T("missing colon."));
 		RET_NULL;
 	}
 	++s;
@@ -279,7 +279,7 @@ JSON_Value * JSON_Parser::parse_start(LPCXSTR& psz, LPCXSTR e)
 	}
 	else
 	{
-		set_error("A JSON payload should be an object or array.");
+		set_error(X_T("A JSON payload should be an object or array."));
 	}
 
 	psz = s;
@@ -329,7 +329,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			++s;
 			ret = parse_string(s, e, nEndChar);
 #else
-			set_error("illegal single quote.");
+			set_error(X_T("illegal single quote."));
 #endif
 		}
 		break;
@@ -349,7 +349,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 #if JSON_ENABLE_JSON5
 				goto __label_as_string;
 #else
-				set_error("bad value.");
+				set_error(X_T("bad value."));
 #endif
 			}
 		}
@@ -370,7 +370,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 #if JSON_ENABLE_JSON5
 				goto __label_as_string;
 #else
-				set_error("bad value.");
+				set_error(X_T("bad value."));
 #endif
 			}
 		}
@@ -400,7 +400,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 #if JSON_ENABLE_JSON5
 					goto __label_as_string;
 #else
-					set_error("bad value.");
+					set_error(X_T("bad value."));
 #endif
 				}
 			}
@@ -422,7 +422,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 #if JSON_ENABLE_JSON5
 				goto __label_as_string;
 #else
-				set_error("bad value.");
+				set_error(X_T("bad value."));
 #endif
 			}
 		}
@@ -474,7 +474,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 		break;
 	case ',':
 		{
-			set_error("extra comma.");
+			set_error(X_T("extra comma."));
 		}
 		break;
 	default:
@@ -489,7 +489,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				{
 					if (name.end - name.start > (std::numeric_limits<int32_t>::max)())
 					{
-						set_error("string length exceeds 2147483648.");
+						set_error(X_T("string length exceeds 2147483648."));
 					}
 					else
 					{
@@ -502,7 +502,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				}
 			}
 #else
-			set_error("illegal expression.");
+			set_error(X_T("illegal expression."));
 #endif
 		}
 		break;
@@ -519,7 +519,7 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 	s = _json_shift_space(s, e);
 	if (s >= e)
 	{
-		set_error("unclosed object.");
+		set_error(X_T("unclosed object."));
 		return nullptr;
 	}
 	if (*s == '}')
@@ -534,7 +534,7 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 		s = _json_shift_space(s, e);
 		if (s >= e)
 		{
-			set_error("unclosed object.");
+			set_error(X_T("unclosed object."));
 			return nullptr;
 		}
 
@@ -548,21 +548,26 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 		}
 		else if (*s == ',' JSON5_IF_ENABLE(|| *s == ';'))
 		{
+__loop_json5_object_comma:
 			++s;
 
 			s = _json_shift_space(s, e);
 			if (s >= e)
 			{
-				set_error("unclosed object.");
+				set_error(X_T("unclosed object."));
 				return nullptr;
 			}
+#if JSON_ENABLE_JSON5
+			if (*s == ',' || *s == ';')
+				goto __loop_json5_object_comma;
+#endif
 			if (*s == '}')
 			{
 #if JSON_ENABLE_JSON5
 				++s;
 				return parent;
 #else
-				set_error("extra comma.");
+				set_error(X_T("extra comma."));
 				return nullptr;
 #endif
 			}
@@ -570,7 +575,7 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 		}
 		else
 		{
-			set_error("missing comma.");
+			set_error(X_T("missing comma."));
 			return nullptr;
 		}
 	}
@@ -578,7 +583,7 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 	if (parent->elements == nullptr)
 	{
 		if(m_pError == nullptr)
-			set_error("missing value.");
+			set_error(X_T("missing value."));
 	}
 	return nullptr;
 }
@@ -590,7 +595,7 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 	s = _json_shift_space(s, e);
 	if (s >= e)
 	{
-		set_error("unclosed array.");
+		set_error(X_T("unclosed array."));
 		return nullptr;
 	}
 	if (*s == ']')
@@ -605,7 +610,7 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 		s = _json_shift_space(s, e);
 		if (s >= e)
 		{
-			set_error("unclosed array.");
+			set_error(X_T("unclosed array."));
 			return nullptr;
 		}
 
@@ -619,21 +624,26 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 		}
 		else if (*s == ',' JSON5_IF_ENABLE(|| *s == ';'))
 		{
+__loop_json5_array_comma:
 			++s;
 
 			s = _json_shift_space(s, e);
 			if (s >= e)
 			{
-				set_error("unclosed array.");
+				set_error(X_T("unclosed array."));
 				return nullptr;
 			}
+#if JSON_ENABLE_JSON5
+			if (*s == ',' || *s == ';')
+				goto __loop_json5_array_comma;
+#endif
 			if (*s == ']')
 			{
 #if JSON_ENABLE_JSON5
 				++s;
 				return parent;
 #else
-				set_error("extra comma.");
+				set_error(X_T("extra comma."));
 				return nullptr;
 #endif
 			}
@@ -641,7 +651,7 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 		}
 		else
 		{
-			set_error("missing comma.");
+			set_error(X_T("missing comma."));
 			return nullptr;
 		}
 	}
@@ -649,7 +659,7 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 	if (parent->elements == nullptr)
 	{
 		if (m_pError == nullptr)
-			set_error("missing value.");
+			set_error(X_T("missing value."));
 	}
 	return nullptr;
 }
@@ -675,11 +685,11 @@ JSON_Value * JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
 
 	if (s >= e)
 	{
-		set_error("unexpected end.");
+		set_error(X_T("unexpected end."));
 	}
 	else
 	{
-		set_error("string length exceeds 2147483648.");
+		set_error(X_T("string length exceeds 2147483648."));
 	}
 
 	return nullptr;
@@ -747,7 +757,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		++s;
 		if (s >= e)
 		{
-			set_error("unexpected end.");
+			set_error(X_T("unexpected end."));
 			RET_NULL;
 		}
 	}
@@ -756,7 +766,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		++s;
 		if (s >= e)
 		{
-			set_error("unexpected end.");
+			set_error(X_T("unexpected end."));
 			RET_NULL;
 		}
 		minus = true;
@@ -792,7 +802,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				psz = s;
 				return ret;
 #else
-				set_error("numbers cannot be hex.");
+				set_error(X_T("numbers cannot be hex."));
 				return nullptr;
 #endif
 			}
@@ -818,7 +828,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				psz = s;
 				return ret;
 #else
-				set_error("numbers cannot be binary.");
+				set_error(X_T("numbers cannot be binary."));
 				return nullptr;
 #endif
 			}
@@ -843,14 +853,14 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				psz = s;
 				return ret;
 #else
-				set_error("numbers cannot be octal.");
+				set_error(X_T("numbers cannot be octal."));
 				return nullptr;
 #endif
 			}
 			else if (_json_is_digit(s[1]))
 			{//089
 #if !JSON_ENABLE_JSON5
-				set_error("numbers cannot have leading zeroes.");
+				set_error(X_T("numbers cannot have leading zeroes."));
 				return nullptr;
 #endif
 			}
@@ -886,7 +896,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		{
 			if (d >= 1.7976931348623157e307)	// DBL_MAX / 10.0
 			{
-				set_error("numbers out of range.");
+				set_error(X_T("numbers out of range."));
 				return nullptr;
 			}
 
@@ -900,7 +910,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		++s;
 		if (s >= e)
 		{
-			set_error("unexpected end.");
+			set_error(X_T("unexpected end."));
 			RET_NULL;
 		}
 
@@ -986,7 +996,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 					exp = (exp << 3) + (exp << 1) + (*s++ - '0');
 					if (exp > maxExp)
 					{
-						set_error("numbers out of range.");
+						set_error(X_T("numbers out of range."));
 						return nullptr;
 					}
 				}
@@ -994,7 +1004,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		}
 		else
 		{
-			set_error("illegal number.");
+			set_error(X_T("illegal number."));
 			return nullptr;
 		}
 

@@ -104,7 +104,7 @@ struct JSON_Parser
 
 	const JSON_Value * Value() const { return m_pRootValue; }
 	size_t Count() const { return m_Alloctor.size(); }
-	const char* Error() const { return m_pError; }
+	LPCXSTR Error() const { return m_pError; }
 
 	JSON_Parser();
 	~JSON_Parser();
@@ -120,9 +120,9 @@ private:
 	JSON_Value * parse_number(LPCXSTR& s, LPCXSTR e);
 
 	LPCXSTR _json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name& name);
-	void set_error(const char* e);
+	void set_error(LPCXSTR e);
 
 	JSON_Alloctor		m_Alloctor;
 	JSON_Value *		m_pRootValue;
-	const char*			m_pError;
+	LPCXSTR				m_pError;
 };
