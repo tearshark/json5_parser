@@ -64,23 +64,23 @@ JSON_Parser::~JSON_Parser()
 
 }
 
-void JSON_Parser::set_error(LPCXSTR e)
+void JSON_Parser::set_error(LPCXSTR e) noexcept
 {
 	m_pError = e;
 }
 
-static inline size_t _json_is_flag(int c, size_t f) { return __json_char_flag[(unsigned char)c] & f; }
-static inline  size_t _json_is_space(int c) { JSON_U(c, 0);return _json_is_flag(c, jsoncf_space); }
-static inline  size_t _json_is_name(int c) { JSON_U(c, 1);return _json_is_flag(c, jsoncf_name); }
-static inline  size_t _json_is_digit(int c) { JSON_U(c, 0);return _json_is_flag(c, jsoncf_digit); }
-static inline  size_t _json_is_bin(int c) { JSON_U(c, 0);return _json_is_flag(c, jsoncf_bin); }
-static inline  size_t _json_is_oct(int c) { JSON_U(c, 0);return _json_is_flag(c, jsoncf_oct); }
-static inline  size_t _json_is_hex(int c) { JSON_U(c, 0);return _json_is_flag(c, jsoncf_hex); }
-static inline  size_t _json_hex_leader(int c) { return c == 'x' || c == 'X'; }
-static inline  size_t _json_bin_leader(int c) { return c == 'b' || c == 'B'; }
+static inline size_t _json_is_flag(int c, size_t f) noexcept { return __json_char_flag[(unsigned char)c] & f; }
+static inline  size_t _json_is_space(int c) noexcept { JSON_U(c, 0);return _json_is_flag(c, jsoncf_space); }
+static inline  size_t _json_is_name(int c) noexcept { JSON_U(c, 1);return _json_is_flag(c, jsoncf_name); }
+static inline  size_t _json_is_digit(int c) noexcept { JSON_U(c, 0);return _json_is_flag(c, jsoncf_digit); }
+static inline  size_t _json_is_bin(int c) noexcept { JSON_U(c, 0);return _json_is_flag(c, jsoncf_bin); }
+static inline  size_t _json_is_oct(int c) noexcept { JSON_U(c, 0);return _json_is_flag(c, jsoncf_oct); }
+static inline  size_t _json_is_hex(int c) noexcept { JSON_U(c, 0);return _json_is_flag(c, jsoncf_hex); }
+static inline  size_t _json_hex_leader(int c) noexcept { return c == 'x' || c == 'X'; }
+static inline  size_t _json_bin_leader(int c) noexcept { return c == 'b' || c == 'B'; }
 
 //提取名称
-LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name & name)
+LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name & name) noexcept
 {
 	int nEndChar = 0;
 	bool bquotation = *_s == '"' JSON5_IF_ENABLE(|| *_s == '\'');
@@ -122,7 +122,7 @@ LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name
 
 //跳过起始的空白字符
 //跳过注释(json5)
-static inline LPCXSTR _json_shift_space(LPCXSTR _s, LPCXSTR _e)
+static inline LPCXSTR _json_shift_space(LPCXSTR _s, LPCXSTR _e) noexcept
 {
 #if JSON5_ENABLE_COMMENTS
 	for (; _s < _e; )
@@ -179,7 +179,7 @@ static inline LPCXSTR _json_shift_space(LPCXSTR _s, LPCXSTR _e)
 }
 
 //不区分大小写的比较字符串
-static inline LPCXSTR _json_cmp_string(LPCXSTR _s, LPCXSTR _e, LPCXSTR psz)
+static inline LPCXSTR _json_cmp_string(LPCXSTR _s, LPCXSTR _e, LPCXSTR psz) noexcept
 {
 	while ((_s < _e) && *psz && ((isupper(*(const XUCHAR*)_s) ? tolower(*_s) : *_s) == *psz))
 	{
@@ -469,7 +469,8 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	case '9':
 	case '.':	//json5
 		{
-			ret = parse_number(s, e);
+			ret = m_Alloctor.alloc();
+			ret = parse_number(ret, s, e);
 		}
 		break;
 	case ',':
@@ -548,7 +549,9 @@ JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e
 		}
 		else if (*s == ',' JSON5_IF_ENABLE(|| *s == ';'))
 		{
-__loop_json5_object_comma:
+#if JSON_ENABLE_JSON5
+__loop_json5_object_comma :
+#endif
 			++s;
 
 			s = _json_shift_space(s, e);
@@ -624,7 +627,9 @@ JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
 		}
 		else if (*s == ',' JSON5_IF_ENABLE(|| *s == ';'))
 		{
-__loop_json5_array_comma:
+#if JSON_ENABLE_JSON5
+__loop_json5_array_comma :
+#endif
 			++s;
 
 			s = _json_shift_space(s, e);
@@ -695,7 +700,7 @@ JSON_Value * JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
 	return nullptr;
 }
 
-int64_t JSON_Parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType)
+int64_t JSON_Parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexcept
 {
 	LPCXSTR s = psz, scanstart = psz;
 	if (e == nullptr)
@@ -747,7 +752,7 @@ int64_t JSON_Parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType)
 	return lValue;
 }
 
-JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
+JSON_Value * JSON_Parser::parse_number(JSON_Value* ret, LPCXSTR& psz, LPCXSTR e) noexcept
 {
 	bool minus = false;
 	LPCXSTR s = psz;
@@ -775,6 +780,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 	{//0开头，可能是0，十六进制，二进制，八进制
 		if (s[1] != '.' && s[1] != 'e' && s[1] != 'E')
 		{
+#if JSON_ENABLE_JSON5
 			if (_json_hex_leader(s[1]))
 			{//0x，十六进制
 #if JSON_ENABLE_JSON5
@@ -795,7 +801,6 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 					i64 = (i64 << 4) | i;
 				}
 
-				JSON_Value* ret = m_Alloctor.alloc();
 				ret->type = JSON_Type::HexLong;
 				ret->l = i64;
 
@@ -806,7 +811,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				return nullptr;
 #endif
 			}
-			else if (_json_bin_leader(s[1]))
+			if (_json_bin_leader(s[1]))
 			{//0b，二进制
 #if JSON_ENABLE_JSON5
 				s += 2;
@@ -821,7 +826,6 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 					i64 = (i64 << 1) | i;
 				}
 
-				JSON_Value* ret = m_Alloctor.alloc();
 				ret->type = JSON_Type::BinaryLong;
 				ret->l = i64;
 
@@ -832,7 +836,7 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				return nullptr;
 #endif
 			}
-			else if (_json_is_oct(s[1]))
+			if (_json_is_oct(s[1]))
 			{//0[1-7]，八进制
 #if JSON_ENABLE_JSON5
 				s += 1;
@@ -846,7 +850,6 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 					i64 = (i64 << 3) | i;
 				}
 
-				JSON_Value* ret = m_Alloctor.alloc();
 				ret->type = JSON_Type::OctalLong;
 				ret->l = i64;
 
@@ -857,8 +860,10 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				return nullptr;
 #endif
 			}
-			else if (_json_is_digit(s[1]))
+#endif
+			if(_json_is_digit(s[1]))
 			{//089
+				;
 #if !JSON_ENABLE_JSON5
 				set_error(X_T("numbers cannot have leading zeroes."));
 				return nullptr;
@@ -885,8 +890,8 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 			}
 		}
 
-		//i64 = i64 * 10 + (*s++ - '0');
-		i64 = (i64 << 3) + (i64 << 1) + (*s++ - '0');
+		int dgt = *s++ - '0';
+		i64 = i64 * 10 + dgt;
 		significandDigit++;
 	}
 
@@ -900,7 +905,8 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				return nullptr;
 			}
 
-			d = d * 10.0 + (*s++ - '0');
+			int dgt = *s++ - '0';
+			d = d * 10.0 + dgt;
 		}
 	}
 
@@ -920,15 +926,17 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		{
 			while (s < e && _json_is_digit(*s))
 			{
-				if (i64 > 0x1FFFFFFFFFFFFFULL) //2^53 - 1 for fast path
-					break;
-				else
+				if (i64 <= 0x1FFFFFFFFFFFFFULL) //2^53 - 1 for fast path
 				{
-					//i64 = i64 * 10 + (*s++ - '0');
-					i64 = (i64 << 3) + (i64 << 1) + (*s++ - '0');
+					int dgt = *s++ - '0';
 					--expFrac;
+					i64 = i64 * 10 + dgt;
 					if (i64 != 0)
 						significandDigit++;
+				}
+				else
+				{
+					break;
 				}
 			}
 
@@ -940,7 +948,8 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 		{
 			if (significandDigit < 17)
 			{
-				d = d * 10.0 + (*s - '0');
+				int dgt = *s - '0';
+				d = d * 10.0 + dgt;
 				--expFrac;
 				if (d > 0.0)
 					significandDigit++;
@@ -978,8 +987,8 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 			{
 				while (s < e && _json_is_digit(*s))
 				{
-					//exp = exp * 10 + (*s++ - '0');
-					exp = (exp << 3) + (exp << 1) + (*s++ - '0');
+					int dgt = *s++ - '0';
+					exp = exp * 10 + dgt;
 					if (exp >= 214748364)
 					{
 						while (s < e && _json_is_digit(*s))
@@ -992,8 +1001,8 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 				int maxExp = 308 - expFrac;
 				while (s < e && _json_is_digit(*s))
 				{
-					//exp = exp * 10 + (*s++ - '0');
-					exp = (exp << 3) + (exp << 1) + (*s++ - '0');
+					int dgt = *s++ - '0';
+					exp = exp * 10 + dgt;
 					if (exp > maxExp)
 					{
 						set_error(X_T("numbers out of range."));
@@ -1012,19 +1021,16 @@ JSON_Value * JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e)
 			exp = -exp;
 	}
 
-	JSON_Value * ret = nullptr;
 	if (useDouble)
 	{
 		int p = exp + expFrac;
 		d = StrtodNormalPrecision(d, p);
 
-		ret = m_Alloctor.alloc();
 		ret->type = JSON_Type::Double;
 		ret->f = minus ? -d : d;
 	}
 	else
 	{
-		ret = m_Alloctor.alloc();
 		ret->type = JSON_Type::DecimalLong;
 		if (minus)
 			ret->l = static_cast<int64_t>(~i64 + 1);

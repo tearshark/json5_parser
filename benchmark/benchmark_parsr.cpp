@@ -6,7 +6,7 @@
 #include "json5_parser/json5_parser.h"
 #include "rapidjson/document.h"
 
-const int N = 100;
+const int N = 200;
 
 std::tuple<char*, size_t> load_from_file(const char* path)
 {
