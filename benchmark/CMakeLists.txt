@@ -4,6 +4,7 @@ project(json5_benchmark)
 set(SRC benchmark_parsr.cpp)
 
 include_directories(${PROJECT_SOURCE_DIR}/../include)
+include_directories(${PROJECT_SOURCE_DIR}/../rapidjson/include)
 
 add_executable(${PROJECT_NAME} ${SRC})
 

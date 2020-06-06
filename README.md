@@ -14,36 +14,46 @@
 ###### 1、关闭json5选项
 ```
 benchmark_parser_json parse file: ./data/canada.json
-parse 2251060 bytes cost 0.761064 s, speeds is 282.076 MB/s
+parse 2251060 bytes cost 0.648113 s, speeds is 331.235 MB/s
 benchmark_parser_json parse file: ./data/twitter.json
-parse 631514 bytes cost 0.0488284 s, speeds is 1233.42 MB/s
+parse 631514 bytes cost 0.053727 s, speeds is 1120.96 MB/s
 benchmark_parser_json parse file: ./data/citm_catalog.json
-parse 1727204 bytes cost 0.100364 s, speeds is 1641.22 MB/s
+parse 1727204 bytes cost 0.120617 s, speeds is 1365.64 MB/s
+
+benchmark_rapidjson parse file: ./data/canada.json
+parse 2251060 bytes cost 0.377634 s, speeds is 568.481 MB/s
+benchmark_rapidjson parse file: ./data/twitter.json
+parse 631514 bytes cost 0.154151 s, speeds is 390.693 MB/s
+benchmark_rapidjson parse file: ./data/citm_catalog.json
+parse 1727204 bytes cost 0.195189 s, speeds is 843.896 MB/s
 ```
 
-| json文件          | 文件大小（Bytes）  | 重复次数     |  用时(秒)      | 速度(MB/S)    |
-| ----------------- | :---------------: | :----------: | :------------: | :----------: |
-| canada.json       |      2251060      |     100      |   0.761064     | **282.076**   |
-| twitter.json      |      631514       |     100      |   0.0488284    | **1233.42**   |
-| citm_catalog.json |      1727204      |     100      |    0.100364    | **1641.22**   |
+| 项目         | json文件          | 文件大小（Bytes） | 重复次数 | 用时(秒) | 速度(MB/S)  |
+| :----------- | :---------------- | :---------------: | :------: | :------: | :---------: |
+| json5_parser | canada.json       |      2251060      |   100    | 0.648113 | **331.235** |
+| json5_parser | twitter.json      |      631514       |   100    | 0.053727 | **1120.96** |
+| json5_parser | citm_catalog.json |      1727204      |   100    | 0.120617 | **1365.64** |
+| rapidjson    | canada.json       |      2251060      |   100    | 0.377634 | **568.481** |
+| rapidjson    | twitter.json      |      631514       |   100    | 0.154151 | **390.693** |
+| rapidjson    | citm_catalog.json |      1727204      |   100    | 0.195189 | **843.896** |
 
 <br>
 
 ###### 2、开启json5选项
 ```
 benchmark_parser_json parse file: ./data/canada.json
-parse 2251060 bytes cost 0.750216 s, speeds is 286.155 MB/s
+parse 2251060 bytes cost 0.756168 s, speeds is 283.902 MB/s
 benchmark_parser_json parse file: ./data/twitter.json
-parse 631514 bytes cost 0.05791 s, speeds is 1039.99 MB/s
+parse 631514 bytes cost 0.0538533 s, speeds is 1118.33 MB/s
 benchmark_parser_json parse file: ./data/citm_catalog.json
-parse 1727204 bytes cost 0.113314 s, speeds is 1453.65 MB/s
+parse 1727204 bytes cost 0.116481 s, speeds is 1414.13 MB/s
 ```
 
-| json文件          | 文件大小（Bytes）  | 重复次数     |  用时(秒)      | 速度(MB/S)    |
-| ----------------- | :---------------: | :----------: | :------------: | :----------: |
-| canada.json       |      2251060      |     100      |   0.750216     | **286.155**   |
-| twitter.json      |      631514       |     100      |   0.05791    | **1039.99**   |
-| citm_catalog.json |      1727204      |     100      |    0.113314    | **1453.65**   |
+| 项目         | json文件          | 文件大小（Bytes） | 重复次数 | 用时(秒)  | 速度(MB/S)  |
+| :----------- | :---------------- | :---------------: | :------: | :-------: | :---------: |
+| json5_parser | canada.json       |      2251060      |   100    | 0.756168  | **283.902** |
+| json5_parser | twitter.json      |      631514       |   100    | 0.0538533 | **1118.33** |
+| json5_parser | citm_catalog.json |      1727204      |   100    | 0.116481  | **1414.13** |
 
 <br>
 
