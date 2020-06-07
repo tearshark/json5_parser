@@ -1,17 +1,6 @@
 ﻿//2018-01-09  支持 JSON5 规范
 
-JSON_Parser::JSON_Parser()
-	: m_pWalker(nullptr)
-	, m_pError(nullptr)
-{
-}
-
-JSON_Parser::~JSON_Parser()
-{
-
-}
-
-void JSON_Parser::set_error(LPCXSTR e) noexcept
+inline void JSON_Parser::set_error(LPCXSTR e) noexcept
 {
 	m_pError = e;
 }

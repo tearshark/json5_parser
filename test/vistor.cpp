@@ -28,7 +28,8 @@ static void report_file_location(const char* path, const char* psz, const char* 
 	std::cout << path << "(" << (line + 1) << ") col " << (column + 1);
 }
 
-std::unique_ptr<char[]> load_json_from_file(json5::parser& parser, const char* path)
+template<class _Walker>
+std::unique_ptr<char[]> load_json_from_file(_Walker& walker, const char* path)
 {
 	FILE* file = fopen(path, "rb");
 	if (file == nullptr)
@@ -44,7 +45,7 @@ std::unique_ptr<char[]> load_json_from_file(json5::parser& parser, const char* p
 	psz[length] = 0;
 	fclose(file);
 
-	json5::singlebyte::JSON_DebugWalker walker;
+	json5::parser parser;
 	walker.ErrorReport = [path, psz, pszEnd](const char* err, const char* stoped)
 	{
 		char* newline = (char*)strchr(pszEnd, '\r');
@@ -66,8 +67,8 @@ std::unique_ptr<char[]> load_json_from_file(json5::parser& parser, const char* p
 
 void json5_vistor(const char* path)
 {
-	json5::parser parser;
-	auto buffer = load_json_from_file(parser, path);
+	json5::singlebyte::JSON_DebugWalker walker;
+	auto buffer = load_json_from_file(walker, path);
 /*
 	if (buffer)
 	{

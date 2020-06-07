@@ -22,9 +22,6 @@ struct JSON_Parser
 	bool Parse(JSON_Walker* walker, LPCXSTR psz, LPCXSTR * ppszEnd = nullptr);
 	LPCXSTR Error() const  noexcept { return m_pError; }
 
-	JSON_Parser();
-	~JSON_Parser();
-
 	static int64_t _parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexcept;
 private:
 	bool parse_start(LPCXSTR& s, LPCXSTR e);
@@ -39,7 +36,7 @@ private:
 	void set_error(LPCXSTR e) noexcept;
 
 	JSON_Walker*		m_pWalker;
-	LPCXSTR				m_pError;
+	LPCXSTR				m_pError = nullptr;
 };
 
 LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept;

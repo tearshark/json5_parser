@@ -18,7 +18,7 @@ struct JSON_DebugWalker : public JSON_Walker
 	virtual void PushNull() override
 	{
 		PrintTable();
-		std::cout << "null, " << std::endl;
+		std::cout << "null," << std::endl;
 	}
 	virtual void* PushObject() override
 	{
@@ -39,22 +39,22 @@ struct JSON_DebugWalker : public JSON_Walker
 		PrintTable();
 		std::cout << "\"";
 		print_string_view(std::basic_string_view<XCHAR>(str.start, str.end - str.start));
-		std::cout << "\", " << std::endl;
+		std::cout << "\"," << std::endl;
 	}
 	virtual void PushDouble(double value) override
 	{
 		PrintTable();
-		std::cout << value << ", " << std::endl;
+		std::cout << value << "," << std::endl;
 	}
 	virtual void PushLong(JSON_Type type, int64_t value) override
 	{
 		PrintTable();
-		std::cout << value << ", " << std::endl;
+		std::cout << value << "," << std::endl;
 	}
 	virtual void PushBoolean(bool value) override
 	{
 		PrintTable();
-		std::cout << (value ? "true" : "false") << ", " << std::endl;
+		std::cout << (value ? "true" : "false") << "," << std::endl;
 	}
 
 	virtual void PushName(JSON_String name) override
@@ -71,13 +71,13 @@ struct JSON_DebugWalker : public JSON_Walker
 	{
 		--tabCount;
 		PrintTable();
-		std::cout << "}" << std::endl;
+		std::cout << "}," << std::endl;
 	}
 	virtual void PopArray(void*) override
 	{
 		--tabCount;
 		PrintTable();
-		std::cout << "]" << std::endl;
+		std::cout << "]," << std::endl;
 	}
 
 	virtual void ErrorStop(LPCXSTR err, LPCXSTR stoped) override
@@ -92,8 +92,8 @@ private:
 		{
 			for (int i = 0; i < tabCount; ++i)
 				std::cout << "  ";
-			cancelTab = false;
 		}
+		cancelTab = false;
 	}
 	int tabCount = 0;
 	bool cancelTab = false;
