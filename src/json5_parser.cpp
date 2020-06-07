@@ -1,12 +1,14 @@
 #include <cassert>
 #include <ctype.h>
 #include <string>
+#include <string_view>
 #include <algorithm>
 #include <cstring>
 #include <new>
 #include <cmath>
 #include <memory>
 #include <string.h>
+
 #include "json5_parser/const_def.h"
 #include "json5_parser/config.h"
 
@@ -22,8 +24,9 @@ namespace json5
 
 namespace unicode
 {
-#include "json5_parser/parser.hpp"
-#include "parser_impl.hpp"
+#include "json5_parser/walker.inl"
+#include "json5_parser/parser.inl"
+#include "parser.hpp"
 }
 
 #include "json5_parser/xchar/xchar_undef.h"
@@ -33,8 +36,9 @@ namespace unicode
 
 namespace singlebyte
 {
-#include "json5_parser/parser.hpp"
-#include "parser_impl.hpp"
+#include "json5_parser/walker.inl"
+#include "json5_parser/parser.inl"
+#include "parser.hpp"
 }
 
 }

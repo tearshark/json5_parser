@@ -44,17 +44,18 @@ std::unique_ptr<char[]> load_json_from_file(json5::parser& parser, const char* p
 	psz[length] = 0;
 	fclose(file);
 
-	auto* jv = parser.Parse(1024, psz, &pszEnd);
-	if (parser.Error() != nullptr)
+	json5::singlebyte::JSON_DebugWalker walker;
+	walker.ErrorReport = [path, psz, pszEnd](const char* err, const char* stoped)
 	{
 		char* newline = (char*)strchr(pszEnd, '\r');
 		if (newline != nullptr) *newline = 0;
 
 		report_file_location(path, psz, pszEnd);
-		std::cout << " : error '" << parser.Error() << "' at:" << std::endl << pszEnd << std::endl;
-	}
-	
-	if (jv == nullptr)
+		std::cout << " : error '" << err << "' at:" << std::endl << pszEnd << std::endl;
+	};
+
+	auto jv = parser.Parse(&walker, psz, &pszEnd);
+	if (jv == false)
 	{
 		delete[] psz;
 		return nullptr;
@@ -67,6 +68,7 @@ void json5_vistor(const char* path)
 {
 	json5::parser parser;
 	auto buffer = load_json_from_file(parser, path);
+/*
 	if (buffer)
 	{
 		singlebyte::JSON_Vistor(parser.Value(), 
@@ -102,6 +104,7 @@ void json5_vistor(const char* path)
 				std::cout << std::endl;
 		});
 	}
+*/
 }
 
 namespace json5

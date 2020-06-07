@@ -1,60 +1,7 @@
 ﻿//2018-01-09  支持 JSON5 规范
 
-JSON_Alloctor::JSON_Alloctor(size_t nNumBatch/* = 4*/)
-	: m_pNextAlloc(nullptr)
-	, m_pEndAlloc(nullptr)
-	, m_nAllocedCount(0)
-	, m_pFirstNode(nullptr)
-	, m_nNumBatch((std::max)(nNumBatch, (size_t)64))
-{
-}
-
-JSON_Alloctor::~JSON_Alloctor()
-{
-	clear(0);
-}
-
-JSON_Value * JSON_Alloctor::alloc()
-{
-	if (m_pNextAlloc >= m_pEndAlloc)
-	{
-		size_t nNumAlloc = sizeof(JSON_Value) * m_nNumBatch;
-
-		char * pNode = (char *)_aligned_malloc(nNumAlloc, alignof(JSON_Value));
-		//memset(pNode, 0, nNumAlloc);
-
-		*(char **)pNode = m_pFirstNode;
-		m_pFirstNode = pNode;
-
-		m_pNextAlloc = (JSON_Value *)(pNode + sizeof(JSON_Value));
-		m_pEndAlloc = m_pNextAlloc + m_nNumBatch - 1;
-	}
-
-	JSON_Value * t = m_pNextAlloc;
-	++m_pNextAlloc;
-	++m_nAllocedCount;
-
-	return t;
-}
-
-void JSON_Alloctor::clear(size_t nNumBatch)
-{
-	for (char * p = m_pFirstNode; p; )
-	{
-		char * t = *(char **)p;
-		_aligned_free(p);
-		p = t;
-	}
-	m_pNextAlloc = nullptr;
-	m_pEndAlloc = nullptr;
-	m_nAllocedCount = 0;
-	m_pFirstNode = nullptr;
-	m_nNumBatch = (std::max)(nNumBatch, (size_t)64);
-}
-
-
 JSON_Parser::JSON_Parser()
-	: m_pRootValue(nullptr)
+	: m_pWalker(nullptr)
 	, m_pError(nullptr)
 {
 }
@@ -80,7 +27,7 @@ static inline  size_t _json_hex_leader(int c) noexcept { return c == 'x' || c ==
 static inline  size_t _json_bin_leader(int c) noexcept { return c == 'b' || c == 'B'; }
 
 //提取名称
-LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name & name) noexcept
+LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_String& name) noexcept
 {
 	int nEndChar = 0;
 	bool bquotation = *_s == '"' JSON5_IF_ENABLE(|| *_s == '\'');
@@ -189,13 +136,14 @@ static inline LPCXSTR _json_cmp_string(LPCXSTR _s, LPCXSTR _e, LPCXSTR psz) noex
 	return *psz ? nullptr : _s;
 }
 
-JSON_Value * JSON_Parser::Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd/* = nullptr*/)
+bool JSON_Parser::Parse(JSON_Walker* walker, LPCXSTR psz, LPCXSTR * ppszEnd/* = nullptr*/)
 {
-	m_Alloctor.clear(nNunBatch);
-	m_pRootValue = nullptr;
+	assert(walker != nullptr);
+
+	m_pWalker = walker;
 
 	if (psz == nullptr)
-		return nullptr;
+		return false;
 
 	LPCXSTR pszEnd;
 	if (ppszEnd == nullptr)
@@ -203,10 +151,10 @@ JSON_Value * JSON_Parser::Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd
 	else
 		pszEnd = *ppszEnd;
 
-	m_pRootValue = parse_start(psz, pszEnd);
+	bool ret = parse_start(psz, pszEnd);
 
 #if !JSON_ENABLE_JSON5
-	if (m_pRootValue != nullptr && psz != pszEnd)
+	if (ret != false && psz != pszEnd)
 	{
 		psz = _json_shift_space(psz, pszEnd);
 		if (psz != pszEnd)
@@ -219,18 +167,22 @@ JSON_Value * JSON_Parser::Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd
 	if (ppszEnd != nullptr)
 		*ppszEnd = psz;
 
-	return m_pRootValue;
+	if (!ret)
+		m_pWalker->ErrorStop(m_pError, psz);
+
+	return ret;
 }
 
-#define RET_NULL {psz = s; return nullptr;}
+#define RET_NULL {psz = s; return false;}
 #define RET_ZERO {psz = s; return 0;}
 
-JSON_Value * JSON_Parser::parse_pair(LPCXSTR& psz, LPCXSTR e)
+bool JSON_Parser::parse_pair(LPCXSTR& psz, LPCXSTR e)
 {
-	JSON_Value::Name name;
+	JSON_String name;
 	LPCXSTR s = _json_collect_name(psz, e, name);
 	if (s == nullptr)
-		return nullptr;
+		return false;
+
 	size_t nlen = name.end - name.start;
 	if (nlen > (std::numeric_limits<uint16_t>::max)())
 	{
@@ -246,36 +198,35 @@ JSON_Value * JSON_Parser::parse_pair(LPCXSTR& psz, LPCXSTR e)
 	}
 	++s;
 
-	JSON_Value * ret = parse_value(s, e);
-	if (ret != nullptr)
-	{
-		ret->nlen = static_cast<uint16_t>(nlen);
-		ret->name = name.start;
-	}
+	m_pWalker->PushName(name);
+
+	bool ret = parse_value(s, e);
 
 	psz = s;
 	return ret;
 }
 
-JSON_Value * JSON_Parser::parse_start(LPCXSTR& psz, LPCXSTR e)
+bool JSON_Parser::parse_start(LPCXSTR& psz, LPCXSTR e)
 {
 	LPCXSTR s = _json_shift_space(psz, e);
-	if (s >= e) RET_NULL;
+	if (s >= e)
+	{
+		set_error(X_T("unexpected end."));
+		RET_NULL;
+	}
 
-	JSON_Value * ret = nullptr;
+	bool ret = false;
 	if (*s == '{')
 	{
 		++s;
-		ret = m_Alloctor.alloc();
-		ret->type = JSON_Type::Object;
-		ret = parse_object(ret, s, e);
+		void* parent = m_pWalker->PushObject();
+		ret = parse_object(parent, s, e);
 	}
 	else if(*s == '[')
 	{
 		++s;
-		ret = m_Alloctor.alloc();
-		ret->type = JSON_Type::Array;
-		ret = parse_array(ret, s, e);
+		void* parent = m_pWalker->PushArray();
+		ret = parse_array(parent, s, e);
 	}
 	else
 	{
@@ -286,33 +237,31 @@ JSON_Value * JSON_Parser::parse_start(LPCXSTR& psz, LPCXSTR e)
 	return ret;
 }
 
-JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
+bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 {
 	LPCXSTR s = _json_shift_space(psz, e);
-	if (s >= e) RET_NULL;
+	if (s >= e)
+	{
+		set_error(X_T("unexpected end."));
+		RET_NULL;
+	}
 
 	LPCXSTR st;
-	JSON_Value * ret = nullptr;
+	bool ret = false;
 	switch (*s)
 	{
 	case '{':
 		{
 			++s;
-			ret = parse_object(m_Alloctor.alloc(), s, e);
-			if (ret != nullptr)
-			{
-				ret->type = JSON_Type::Object;
-			}
+			void* parent = m_pWalker->PushObject();
+			ret = parse_object(parent, s, e);
 		}
 		break;
 	case '[':
 		{
 			++s;
-			ret = parse_array(m_Alloctor.alloc(), s, e);
-			if (ret != nullptr)
-			{
-				ret->type = JSON_Type::Array;
-			}
+			void* parent = m_pWalker->PushArray();
+			ret = parse_array(parent, s, e);
 		}
 		break;
 	case '"':
@@ -339,10 +288,9 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			st = _json_cmp_string(s, e, X_T("true"));
 			if (st != nullptr)
 			{
-				ret = m_Alloctor.alloc();
-				ret->type = JSON_Type::Boolean;
-				ret->i = 1;
 				s = st;
+				ret = true;
+				m_pWalker->PushBoolean(true);
 			}
 			else
 			{
@@ -360,10 +308,9 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			st = _json_cmp_string(s, e, X_T("false"));
 			if (st != nullptr)
 			{
-				ret = m_Alloctor.alloc();
-				ret->type = JSON_Type::Boolean;
-				ret->i = 0;
 				s = st;
+				ret = true;
+				m_pWalker->PushBoolean(false);
 			}
 			else
 			{
@@ -381,19 +328,18 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			st = _json_cmp_string(s, e, X_T("null"));
 			if (st != nullptr)
 			{
-				ret = m_Alloctor.alloc();
-				ret->type = JSON_Type::Nullptr;
 				s = st;
+				ret = true;
+				m_pWalker->PushNull();
 			}
 			else
 			{	//json5 NaN
 				st = _json_cmp_string(s, e, X_T("nan"));
 				if (st != nullptr)
 				{
-					ret = m_Alloctor.alloc();
-					ret->type = JSON_Type::Double;
-					ret->f = NAN;
 					s = st;
+					ret = true;
+					m_pWalker->PushDouble(NAN);
 				}
 				else
 				{
@@ -412,10 +358,9 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			st = _json_cmp_string(s, e, X_T("infinity"));
 			if (st != nullptr)
 			{
-				ret = m_Alloctor.alloc();
-				ret->type = JSON_Type::Double;
-				ret->f = INFINITY;
 				s = st;
+				ret = true;
+				m_pWalker->PushDouble(INFINITY);
 			}
 			else
 			{
@@ -431,15 +376,18 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	case '-':
 		{	//json5 -Infinity/-NaN
 			st = s + 1;
-			if (st >= e) RET_NULL;
+			if (st >= e)
+			{
+				set_error(X_T("unexpected end."));
+				RET_NULL;
+			}
 			if (*st == 'n' || *st == 'N')
 			{
 				st = _json_cmp_string(st, e, X_T("nan"));
 				if (st != nullptr)
 				{
-					ret = m_Alloctor.alloc();
-					ret->type = JSON_Type::Double;
-					ret->f = (*s == '+') ? NAN : -NAN;
+					ret = true;
+					m_pWalker->PushDouble((*s == '+') ? NAN : -NAN);
 				}
 				s = st;
 				break;
@@ -449,9 +397,8 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				st = _json_cmp_string(st, e, X_T("infinity"));
 				if (st != nullptr)
 				{
-					ret = m_Alloctor.alloc();
-					ret->type = JSON_Type::Double;
-					ret->f = (*s == '+') ? INFINITY : -INFINITY;
+					ret = true;
+					m_pWalker->PushDouble((*s == '+') ? INFINITY : -INFINITY);
 				}
 				s = st;
 				break;
@@ -469,8 +416,7 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	case '9':
 	case '.':	//json5
 		{
-			ret = m_Alloctor.alloc();
-			ret = parse_number(ret, s, e);
+			ret = parse_number(s, e);
 		}
 		break;
 	case ',':
@@ -494,11 +440,8 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 					}
 					else
 					{
-
-						ret = m_Alloctor.alloc();
-						ret->type = JSON_Type::String;
-						ret->slen = static_cast<uint32_t>(name.end - name.start);
-						ret->str = name.start;
+						ret = true;
+						m_pWalker->PushString(name.start, name.end - name.start);
 					}
 				}
 			}
@@ -513,39 +456,42 @@ JSON_Value * JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	return ret;
 }
 
-JSON_Value * JSON_Parser::parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
+bool JSON_Parser::parse_object(void* parent, LPCXSTR& s, LPCXSTR e)
 {
-	parent->elements = nullptr;
+	//parent->type = JSON_Type::Object;
+	//parent->elements = nullptr;
 
 	s = _json_shift_space(s, e);
 	if (s >= e)
 	{
 		set_error(X_T("unclosed object."));
-		return nullptr;
+		return false;
 	}
 	if (*s == '}')
 	{//empty object
 		++s;
+		m_pWalker->PopObject(parent);
 		return parent;
 	}
 
-	JSON_Value * ret;
-	while ((ret = parse_pair(s, e)) != nullptr)
+	bool ret;
+	while ((ret = parse_pair(s, e)) != false)
 	{
 		s = _json_shift_space(s, e);
 		if (s >= e)
 		{
 			set_error(X_T("unclosed object."));
-			return nullptr;
+			return false;
 		}
 
-		ret->prev = parent->elements;
-		parent->elements = ret;
+		//ret->prev = parent->elements;
+		//parent->elements = ret;
 
 		if (*s == '}')
 		{
 			++s;
-			return parent;
+			m_pWalker->PopObject(parent);
+			return ret;
 		}
 		else if (*s == ',' JSON5_IF_ENABLE(|| *s == ';'))
 		{
@@ -558,7 +504,7 @@ __loop_json5_object_comma :
 			if (s >= e)
 			{
 				set_error(X_T("unclosed object."));
-				return nullptr;
+				return false;
 			}
 #if JSON_ENABLE_JSON5
 			if (*s == ',' || *s == ';')
@@ -568,10 +514,11 @@ __loop_json5_object_comma :
 			{
 #if JSON_ENABLE_JSON5
 				++s;
-				return parent;
+				m_pWalker->PopObject(parent);
+				return ret;
 #else
 				set_error(X_T("extra comma."));
-				return nullptr;
+				return false;
 #endif
 			}
 			continue;
@@ -579,51 +526,56 @@ __loop_json5_object_comma :
 		else
 		{
 			set_error(X_T("missing comma."));
-			return nullptr;
+			return false;
 		}
 	}
 
+/*
 	if (parent->elements == nullptr)
 	{
 		if(m_pError == nullptr)
 			set_error(X_T("missing value."));
 	}
-	return nullptr;
+*/
+	return false;
 }
 
-JSON_Value * JSON_Parser::parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e)
+bool JSON_Parser::parse_array(void* parent, LPCXSTR& s, LPCXSTR e)
 {
-	parent->elements = nullptr;
+	//parent->type = JSON_Type::Object;
+	//parent->elements = nullptr;
 
 	s = _json_shift_space(s, e);
 	if (s >= e)
 	{
 		set_error(X_T("unclosed array."));
-		return nullptr;
+		return false;
 	}
 	if (*s == ']')
 	{//empty array
 		++s;
-		return parent;
+		m_pWalker->PopArray(parent);
+		return true;
 	}
 
-	JSON_Value * ret;
-	while ((ret = parse_value(s, e)) != nullptr)
+	bool ret;
+	while ((ret = parse_value(s, e)) != false)
 	{
 		s = _json_shift_space(s, e);
 		if (s >= e)
 		{
 			set_error(X_T("unclosed array."));
-			return nullptr;
+			return false;
 		}
 
-		ret->prev = parent->elements;
-		parent->elements = ret;
+		//ret->prev = parent->elements;
+		//parent->elements = ret;
 
 		if (*s == ']')
 		{
 			++s;
-			return parent;
+			m_pWalker->PopArray(parent);
+			return true;
 		}
 		else if (*s == ',' JSON5_IF_ENABLE(|| *s == ';'))
 		{
@@ -636,7 +588,7 @@ __loop_json5_array_comma :
 			if (s >= e)
 			{
 				set_error(X_T("unclosed array."));
-				return nullptr;
+				return false;
 			}
 #if JSON_ENABLE_JSON5
 			if (*s == ',' || *s == ';')
@@ -646,10 +598,11 @@ __loop_json5_array_comma :
 			{
 #if JSON_ENABLE_JSON5
 				++s;
-				return parent;
+				m_pWalker->PopArray(parent);
+				return true;
 #else
 				set_error(X_T("extra comma."));
-				return nullptr;
+				return false;
 #endif
 			}
 			continue;
@@ -657,37 +610,36 @@ __loop_json5_array_comma :
 		else
 		{
 			set_error(X_T("missing comma."));
-			return nullptr;
+			return false;
 		}
 	}
 
+/*
 	if (parent->elements == nullptr)
 	{
 		if (m_pError == nullptr)
 			set_error(X_T("missing value."));
 	}
-	return nullptr;
+*/
+	return false;
 }
 
-JSON_Value * JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
+bool JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
 {
 	LPCXSTR s = psz;
 	for (;s < e && *s != nEndChar; ++s)
 	{
 		if (*s == '\\') ++s;
 	}
+
 	if (s < e && (s - psz) <= (std::numeric_limits<int32_t>::max)())
 	{
-		JSON_Value * ret = m_Alloctor.alloc();
-		ret->type = JSON_Type::String;
-		ret->slen = static_cast<int32_t>(s - psz);
-		ret->str = psz;
-
+		m_pWalker->PushString(JSON_String{ psz, s });
 		psz = s + 1;
 
-		return ret;
+		return true;
 	}
-
+	
 	if (s >= e)
 	{
 		set_error(X_T("unexpected end."));
@@ -696,8 +648,7 @@ JSON_Value * JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
 	{
 		set_error(X_T("string length exceeds 2147483648."));
 	}
-
-	return nullptr;
+	return false;
 }
 
 int64_t JSON_Parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexcept
@@ -752,7 +703,7 @@ int64_t JSON_Parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noex
 	return lValue;
 }
 
-JSON_Value * JSON_Parser::parse_number(JSON_Value* ret, LPCXSTR& psz, LPCXSTR e) noexcept
+bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 {
 	bool minus = false;
 	LPCXSTR s = psz;
@@ -785,7 +736,11 @@ JSON_Value * JSON_Parser::parse_number(JSON_Value* ret, LPCXSTR& psz, LPCXSTR e)
 			{//0x，十六进制
 #if JSON_ENABLE_JSON5
 				s += 2;
-				if (s >= e) RET_NULL;
+				if (s >= e)
+				{
+					set_error(X_T("unexpected end."));
+					RET_NULL;
+				}
 
 				uint64_t i64 = 0;
 				while (s < e && _json_is_hex(*s) && i64 <= 0x0fffffffffffffffULL)
@@ -815,7 +770,11 @@ JSON_Value * JSON_Parser::parse_number(JSON_Value* ret, LPCXSTR& psz, LPCXSTR e)
 			{//0b，二进制
 #if JSON_ENABLE_JSON5
 				s += 2;
-				if (s >= e) RET_NULL;
+				if (s >= e)
+				{
+					set_error(X_T("unexpected end."));
+					RET_NULL;
+				}
 
 				uint64_t i64 = 0;
 				while (s < e && _json_is_hex(*s) && i64 <= 0x7fffffffffffffffULL)
@@ -1028,31 +987,16 @@ JSON_Value * JSON_Parser::parse_number(JSON_Value* ret, LPCXSTR& psz, LPCXSTR e)
 		int p = exp + expFrac;
 		d = StrtodNormalPrecision(d, p);
 
-		ret->type = JSON_Type::Double;
-		ret->f = minus ? -d : d;
+		m_pWalker->PushDouble(minus ? -d : d);
 	}
 	else
 	{
-		ret->type = JSON_Type::DecimalLong;
-		if (minus)
-			ret->l = static_cast<int64_t>(~i64 + 1);
-		else
-			ret->l = static_cast<int64_t>(i64);
+		int64_t l = minus ? static_cast<int64_t>(~i64 + 1) : static_cast<int64_t>(i64);
+		m_pWalker->PushLong(JSON_Type::DecimalLong, l);
 	}
 
 	psz = s;
-	return ret;
-}
-
-size_t JSON_ElementsCount(const JSON_Value* jv)
-{
-	if (jv->type == JSON_Type::Object || jv->type == JSON_Type::Array)
-	{
-		size_t nCount = 0;
-		for (JSON_Value* e = jv->elements; e != nullptr; e = e->prev) ++nCount;
-		return nCount;
-	}
-	return 0;
+	return true;
 }
 
 LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e)
@@ -1144,33 +1088,4 @@ LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e)
 	}
 
 	return psz;
-}
-
-std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv)
-{
-	std::basic_string<XCHAR> name;
-
-	name.resize(jv->nlen);
-	auto e = JSON_LoadString(const_cast<XCHAR*>(name.data()), jv->name, jv->name + jv->nlen);
-	assert(e - name.data() <= jv->nlen);
-	*e = 0;
-	name.resize(e - name.data());
-
-	return name;
-}
-
-std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv)
-{
-	std::basic_string<XCHAR> name;
-
-	if (JSON_GetType(jv) == JSON_Type::String)
-	{
-		name.resize(jv->slen);
-		auto e = JSON_LoadString(const_cast<XCHAR*>(name.data()), jv->str, jv->str + jv->slen);
-		assert(e - name.data() <= jv->slen);
-		*e = 0;
-		name.resize(e - name.data());
-	}
-
-	return name;
 }

@@ -20,12 +20,6 @@ struct alignas(32) JSON_Value
 
 	alignas(8)
 	JSON_Value* 			prev;			//Previous sibling node, when the parent is an object or an array.
-
-	struct alignas(sizeof(void*) * 2) Name
-	{
-		LPCXSTR				start;
-		LPCXSTR				end;
-	};
 };
 
 inline JSON_Type JSON_GetType(const JSON_Value* jv)
@@ -80,49 +74,13 @@ private:
 	size_t				m_nNumBatch;
 };
 
-/*
-object => { members }
-members => pair , members
-pair => string : value
-array => [ elements ]
-elements => value , elements
-value => string | number | object | array
-number => long | double
-double => int.int
-long  => binary | octal | decimal | hex | true | false | null
-*/
-
-struct JSON_Parser
+struct JSON_DOMWalker : public JSON_Walker
 {
-	/*
-	分析JSON格式的字符串
-	在分析完毕后，JSON_Value里存的地址仍然是参数psz指向的内存快
-	因此，要使用分析后的结果，需要保持psz仍然是有效的
-	JSON_Parse类会保存参数psz指针，但不管理psz内存的释放
-	*/
-	JSON_Value * Parse(size_t nNunBatch, LPCXSTR psz, LPCXSTR * ppszEnd = NULL);
+	JSON_DOMWalker(size_t nNunBatch);
 
-	const JSON_Value * Value() const  noexcept { return m_pRootValue; }
+	const JSON_Value* Value() const  noexcept { return m_pRootValue; }
 	size_t Count() const  noexcept { return m_Alloctor.size(); }
-	LPCXSTR Error() const  noexcept { return m_pError; }
-
-	JSON_Parser();
-	~JSON_Parser();
-
-	static int64_t _parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexcept;
 private:
-	JSON_Value * parse_start(LPCXSTR& s, LPCXSTR e);
-	JSON_Value * parse_pair(LPCXSTR& s, LPCXSTR e);
-	JSON_Value * parse_value(LPCXSTR& s, LPCXSTR e);
-	JSON_Value * parse_object(JSON_Value* parent, LPCXSTR& s, LPCXSTR e);
-	JSON_Value * parse_array(JSON_Value* parent, LPCXSTR& s, LPCXSTR e);
-	JSON_Value * parse_string(LPCXSTR& s, LPCXSTR e, int nEndChar);
-	JSON_Value * parse_number(JSON_Value* ret, LPCXSTR& s, LPCXSTR e) noexcept;
-
-	LPCXSTR _json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_Value::Name& name) noexcept;
-	void set_error(LPCXSTR e) noexcept;
-
 	JSON_Alloctor		m_Alloctor;
-	JSON_Value *		m_pRootValue;
-	LPCXSTR				m_pError;
+	JSON_Value*			m_pRootValue;
 };
