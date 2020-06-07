@@ -47,7 +47,7 @@ void benchmark_json5_parser(const char* path, Args&&... args)
 		for (int i = 0; i < N; ++i)
 		{
 			json::parser parser;
-			_Walker walker{ args... };
+			_Walker walker(std::forward<Args>(args)...);
 			auto jv = parser.Parse(&walker, psz, &pszEnd);
 			if (jv == false)
 			{
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 	std::cout << "DOM" << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
-		benchmark_json5_parser<json::JSON_DummyWalker>(argv[i]);
+		benchmark_json5_parser<json::JSON_DOMWalker>(argv[i], 1024);
 	}
 
 	std::cout << std::endl;
