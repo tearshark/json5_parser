@@ -283,29 +283,29 @@ LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept
 
 std::basic_string<XCHAR> JSON_Value::GetName() const
 {
-	std::basic_string<XCHAR> name;
+	std::basic_string<XCHAR> ret;
 
-	name.resize(this->nlen);
-	auto e = JSON_LoadString(const_cast<XCHAR*>(name.data()), this->name, this->name + this->nlen);
-	assert(e - name.data() <= this->nlen);
+	ret.resize(this->nlen);
+	auto e = JSON_LoadString(const_cast<XCHAR*>(ret.data()), this->name, this->name + this->nlen);
+	assert(e - ret.data() <= this->nlen);
 	*e = 0;
-	name.resize(e - name.data());
+	ret.resize(e - ret.data());
 
-	return name;
+	return ret;
 }
 
 std::basic_string<XCHAR> JSON_Value::GetString() const
 {
-	std::basic_string<XCHAR> name;
+	std::basic_string<XCHAR> ret;
 
 	if (this->type == JSON_Type::String)
 	{
-		name.resize(this->slen);
-		auto e = JSON_LoadString(const_cast<XCHAR*>(name.data()), this->str, this->str + this->slen);
-		assert(e - name.data() <= this->slen);
+		ret.resize(this->slen);
+		auto e = JSON_LoadString(const_cast<XCHAR*>(ret.data()), this->str, this->str + this->slen);
+		assert(e - ret.data() <= this->slen);
 		*e = 0;
-		name.resize(e - name.data());
+		ret.resize(e - ret.data());
 	}
 
-	return name;
+	return ret;
 }

@@ -18,7 +18,7 @@ namespace json5
 	{
 #include "json5_parser/walker.inl"
 #include "json5_parser/parser.inl"
-#include "json5_parser/debug_walker.inl"
+//#include "json5_parser/debug_walker.inl"
 #include "json5_parser/dom_walker.inl"
 
 		typedef JSON_Parser parser;
@@ -32,7 +32,7 @@ namespace json5
 	{
 #include "json5_parser/walker.inl"
 #include "json5_parser/parser.inl"
-#include "json5_parser/debug_walker.inl"
+//#include "json5_parser/debug_walker.inl"
 #include "json5_parser/dom_walker.inl"
 
 		typedef JSON_Parser parser;

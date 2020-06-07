@@ -42,6 +42,4 @@ namespace json5
 	}
 
 	const uint32_t JSONT_NOT_CLASS = 0x78;
-
-	struct JSON_Value;
 }
