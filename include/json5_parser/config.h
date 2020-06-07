@@ -1,10 +1,10 @@
 #pragma once
 
 #ifndef JSON_ENABLE_JSON5
-/* #undef JSON_ENABLE_JSON5 */
+#define JSON_ENABLE_JSON5 1
 #endif	//JSON_ENABLE_JSON5
 
 #if JSON_ENABLE_JSON5
-#define JSON5_ENABLE_COMMENTS	
+#define JSON5_ENABLE_COMMENTS	1
 #else
 #endif	//JSON_ENABLE_JSON5

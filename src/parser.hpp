@@ -416,10 +416,10 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	default:
 		{
 #if JSON_ENABLE_JSON5
-		__label_as_string:
+__label_as_string:
 			if (_json_is_name(*s))
 			{
-				JSON_Value::Name name;
+				JSON_String name;
 				s = _json_collect_name(s, e, name);
 				if (s != nullptr)
 				{
@@ -430,13 +430,13 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 					else
 					{
 						ret = true;
-						m_pWalker->PushString(name.start, name.end - name.start);
+						m_pWalker->PushString(name);
 					}
 				}
+				break;
 			}
-#else
-			set_error(X_T("illegal expression."));
 #endif
+			set_error(X_T("illegal expression."));
 		}
 		break;
 	}
@@ -447,9 +447,6 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 
 bool JSON_Parser::parse_object(void* const parent, LPCXSTR& s, LPCXSTR e)
 {
-	//parent->type = JSON_Type::Object;
-	//parent->elements = nullptr;
-
 	s = _json_shift_space(s, e);
 	if (s >= e)
 	{
@@ -472,9 +469,6 @@ bool JSON_Parser::parse_object(void* const parent, LPCXSTR& s, LPCXSTR e)
 			set_error(X_T("unclosed object."));
 			return false;
 		}
-
-		//ret->prev = parent->elements;
-		//parent->elements = ret;
 
 		if (*s == '}')
 		{
@@ -519,21 +513,14 @@ __loop_json5_object_comma :
 		}
 	}
 
-/*
-	if (parent->elements == nullptr)
-	{
-		if(m_pError == nullptr)
-			set_error(X_T("missing value."));
-	}
-*/
+	if(m_pError == nullptr)
+		set_error(X_T("missing value."));
+
 	return false;
 }
 
 bool JSON_Parser::parse_array(void* const parent, LPCXSTR& s, LPCXSTR e)
 {
-	//parent->type = JSON_Type::Object;
-	//parent->elements = nullptr;
-
 	s = _json_shift_space(s, e);
 	if (s >= e)
 	{
@@ -556,9 +543,6 @@ bool JSON_Parser::parse_array(void* const parent, LPCXSTR& s, LPCXSTR e)
 			set_error(X_T("unclosed array."));
 			return false;
 		}
-
-		//ret->prev = parent->elements;
-		//parent->elements = ret;
 
 		if (*s == ']')
 		{
@@ -603,13 +587,9 @@ __loop_json5_array_comma :
 		}
 	}
 
-/*
-	if (parent->elements == nullptr)
-	{
-		if (m_pError == nullptr)
-			set_error(X_T("missing value."));
-	}
-*/
+	if (m_pError == nullptr)
+		set_error(X_T("missing value."));
+
 	return false;
 }
 
@@ -745,14 +725,13 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 					i64 = (i64 << 4) | i;
 				}
 
-				ret->type = JSON_Type::HexLong;
-				ret->l = i64;
+				m_pWalker->PushLong(JSON_Type::HexLong, i64);
 
 				psz = s;
-				return ret;
+				return true;
 #else
 				set_error(X_T("numbers cannot be hex."));
-				return nullptr;
+				return false;
 #endif
 			}
 			if (_json_bin_leader(s[1]))
@@ -774,14 +753,13 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 					i64 = (i64 << 1) | i;
 				}
 
-				ret->type = JSON_Type::BinaryLong;
-				ret->l = i64;
+				m_pWalker->PushLong(JSON_Type::BinaryLong, i64);
 
 				psz = s;
-				return ret;
+				return true;
 #else
 				set_error(X_T("numbers cannot be binary."));
-				return nullptr;
+				return false;
 #endif
 			}
 			if (_json_is_oct(s[1]))
@@ -798,14 +776,13 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 					i64 = (i64 << 3) | i;
 				}
 
-				ret->type = JSON_Type::OctalLong;
-				ret->l = i64;
+				m_pWalker->PushLong(JSON_Type::OctalLong, i64);
 
 				psz = s;
-				return ret;
+				return true;
 #else
 				set_error(X_T("numbers cannot be octal."));
-				return nullptr;
+				return false;
 #endif
 			}
 #endif
@@ -814,7 +791,7 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 				;
 #if !JSON_ENABLE_JSON5
 				set_error(X_T("numbers cannot have leading zeroes."));
-				return nullptr;
+				return false;
 #endif
 			}
 		}
@@ -850,7 +827,7 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 			if (d >= 1.7976931348623157e307)	// DBL_MAX / 10.0
 			{
 				set_error(X_T("numbers out of range."));
-				return nullptr;
+				return false;
 			}
 
 			int dgt = *s++ - '0';
@@ -956,7 +933,7 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 					if (exp > maxExp)
 					{
 						set_error(X_T("numbers out of range."));
-						return nullptr;
+						return false;
 					}
 				}
 			}
@@ -964,7 +941,7 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 		else
 		{
 			set_error(X_T("illegal number."));
-			return nullptr;
+			return false;
 		}
 
 		if (expMinus)

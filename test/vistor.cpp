@@ -58,7 +58,7 @@ std::unique_ptr<char[]> load_json_from_file(_Walker& walker, const char* path)
 
 		walker.ErrorReport = [path, psz = psz.get()](const char* err, const char* stoped)
 		{
-			char* newline = (char*)strchr(stoped, '\r');
+			char* newline = const_cast<char*>(strchr(stoped, '\r'));
 			if (newline != nullptr) *newline = 0;
 
 			report_file_location(path, psz, stoped);
@@ -81,7 +81,7 @@ void json5_vistor(const char* path)
 	if (buffer != nullptr && walker.Value() != nullptr)
 	{
 		walker.Value()->Vistor( 
-			[](const json5::value* js, const json5::value* parent)
+			[](const json::value* js, const json::value* parent)
 			{
 				if (parent != nullptr && parent->GetType() == json5::JSON_Type::Object)
 				{
