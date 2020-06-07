@@ -45,5 +45,5 @@ add_library(${LIB_NAME} STATIC ${SRC})
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/json5_parser DESTINATION "include")
 install(TARGETS ${LIB_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-#add_subdirectory(./benchmark)
+add_subdirectory(./benchmark)
 add_subdirectory(./test)

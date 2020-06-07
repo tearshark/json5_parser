@@ -28,7 +28,7 @@ inline JSON_Type JSON_GetType(const JSON_Value* jv)
 }
 
 size_t JSON_ElementsCount(const JSON_Value* jv);
-LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e);
+LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept;
 std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv);
 std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv);
 

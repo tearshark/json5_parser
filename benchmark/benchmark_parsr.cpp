@@ -28,7 +28,8 @@ std::tuple<char*, size_t> load_from_file(const char* path)
 	return { nullptr, 0 };
 }
 
-void benchmark_parser_json(const char* path)
+template<class _Walker, class... Args>
+void benchmark_json5_parser(const char* path, Args&&... args)
 {
 	std::cout << __FUNCTION__ << " parse file: " << path << std::endl;
 
@@ -44,8 +45,9 @@ void benchmark_parser_json(const char* path)
 		for (int i = 0; i < N; ++i)
 		{
 			json5::parser parser;
-			auto* jv = parser.Parse(1024, psz, &pszEnd);
-			if (jv == nullptr)
+			_Walker walker{ args... };
+			auto jv = parser.Parse(&walker, psz, &pszEnd);
+			if (jv == false)
 			{
 				std::cout << "failed." << std::endl;
 				break;
@@ -93,9 +95,17 @@ void benchmark_rapidjson(const char* path)
 
 int main(int argc, char* argv[])
 {
+	std::cout << "dummy" << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
-		benchmark_parser_json(argv[i]);
+		benchmark_json5_parser<json5::singlebyte::JSON_DummyWalker>(argv[i]);
+	}
+
+	std::cout << std::endl;
+	std::cout << "DOM" << std::endl;
+	for (int i = 1; i < argc; ++i)
+	{
+		benchmark_json5_parser<json5::singlebyte::JSON_DummyWalker>(argv[i]);
 	}
 
 	std::cout << std::endl;

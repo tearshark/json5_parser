@@ -22,3 +22,21 @@ struct JSON_Walker
 
 	virtual void ErrorStop(LPCXSTR err, LPCXSTR stoped) = 0;
 };
+
+struct JSON_DummyWalker : public JSON_Walker
+{
+	virtual void PushNull() override {}
+	virtual void* PushObject() override { return nullptr; }
+	virtual void* PushArray() override { return nullptr; }
+	virtual void PushString(JSON_String str) override {}
+	virtual void PushDouble(double) override {}
+	virtual void PushLong(JSON_Type, int64_t) override {}
+	virtual void PushBoolean(bool) override {}
+
+	virtual void PushName(JSON_String) override {}
+
+	virtual void PopObject(void*) override {}
+	virtual void PopArray(void*) override {}
+
+	virtual void ErrorStop(LPCXSTR err, LPCXSTR stoped) override {}
+};

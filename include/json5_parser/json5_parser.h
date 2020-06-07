@@ -17,9 +17,9 @@ namespace json5
 	namespace unicode
 	{
 #include "json5_parser/walker.inl"
+#include "json5_parser/parser.inl"
 #include "json5_parser/debug_walker.inl"
 #include "json5_parser/dom_walker.inl"
-#include "json5_parser/parser.inl"
 	}
 
 #include "json5_parser/xchar/xchar_undef.h"
@@ -27,9 +27,9 @@ namespace json5
 	namespace singlebyte
 	{
 #include "json5_parser/walker.inl"
+#include "json5_parser/parser.inl"
 #include "json5_parser/debug_walker.inl"
 #include "json5_parser/dom_walker.inl"
-#include "json5_parser/parser.inl"
 	}
 
 	typedef singlebyte::JSON_Parser parser;

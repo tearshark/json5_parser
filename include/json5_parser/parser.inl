@@ -41,3 +41,5 @@ private:
 	JSON_Walker*		m_pWalker;
 	LPCXSTR				m_pError;
 };
+
+LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept;
