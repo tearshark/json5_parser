@@ -208,13 +208,13 @@ bool JSON_Parser::parse_start(LPCXSTR& psz, LPCXSTR e)
 	if (*s == '{')
 	{
 		++s;
-		void* parent = m_pWalker->PushObject();
+		void* parent = m_pWalker->PushObject(true);
 		ret = parse_object(parent, s, e);
 	}
 	else if(*s == '[')
 	{
 		++s;
-		void* parent = m_pWalker->PushArray();
+		void* parent = m_pWalker->PushArray(true);
 		ret = parse_array(parent, s, e);
 	}
 	else
@@ -242,14 +242,14 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	case '{':
 		{
 			++s;
-			void* parent = m_pWalker->PushObject();
+			void* parent = m_pWalker->PushObject(false);
 			ret = parse_object(parent, s, e);
 		}
 		break;
 	case '[':
 		{
 			++s;
-			void* parent = m_pWalker->PushArray();
+			void* parent = m_pWalker->PushArray(false);
 			ret = parse_array(parent, s, e);
 		}
 		break;
@@ -445,7 +445,7 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	return ret;
 }
 
-bool JSON_Parser::parse_object(void* parent, LPCXSTR& s, LPCXSTR e)
+bool JSON_Parser::parse_object(void* const parent, LPCXSTR& s, LPCXSTR e)
 {
 	//parent->type = JSON_Type::Object;
 	//parent->elements = nullptr;
@@ -529,7 +529,7 @@ __loop_json5_object_comma :
 	return false;
 }
 
-bool JSON_Parser::parse_array(void* parent, LPCXSTR& s, LPCXSTR e)
+bool JSON_Parser::parse_array(void* const parent, LPCXSTR& s, LPCXSTR e)
 {
 	//parent->type = JSON_Type::Object;
 	//parent->elements = nullptr;

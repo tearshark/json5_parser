@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <algorithm>
+#include <functional>
 #include <cstring>
 #include <new>
 #include <cmath>
@@ -28,6 +29,7 @@ namespace unicode
 #include "json5_parser/parser.inl"
 #include "parser.hpp"
 #include "json5_parser/dom_walker.inl"
+#include "dom_walker.hpp"
 }
 
 #include "json5_parser/xchar/xchar_undef.h"
@@ -41,6 +43,7 @@ namespace singlebyte
 #include "json5_parser/parser.inl"
 #include "parser.hpp"
 #include "json5_parser/dom_walker.inl"
+#include "dom_walker.hpp"
 }
 
 }

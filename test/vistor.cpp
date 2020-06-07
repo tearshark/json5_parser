@@ -8,7 +8,7 @@
 
 const int N = 100;
 
-using namespace json5;
+namespace json = json5::singlebyte;
 
 static void report_file_location(const char* path, const char* psz, const char* err)
 {
@@ -28,15 +28,14 @@ static void report_file_location(const char* path, const char* psz, const char* 
 	std::cout << path << "(" << (line + 1) << ") col " << (column + 1);
 }
 
-template<class _Walker>
-std::unique_ptr<char[]> load_json_from_file(_Walker& walker, const char* path)
+std::unique_ptr<char[]> load_text_from_file(const char* path, size_t& length)
 {
 	FILE* file = fopen(path, "rb");
 	if (file == nullptr)
 		return nullptr;
 
 	fseek(file, 0, SEEK_END);
-	size_t length = ftell(file);
+	length = ftell(file);
 	fseek(file, 0, SEEK_SET);
 
 	char* psz = new char[length + 1];
@@ -45,57 +44,66 @@ std::unique_ptr<char[]> load_json_from_file(_Walker& walker, const char* path)
 	psz[length] = 0;
 	fclose(file);
 
-	json5::parser parser;
-	walker.ErrorReport = [path, psz, pszEnd](const char* err, const char* stoped)
-	{
-		char* newline = (char*)strchr(pszEnd, '\r');
-		if (newline != nullptr) *newline = 0;
+	return std::unique_ptr<char[]>{ psz };
+}
 
-		report_file_location(path, psz, pszEnd);
-		std::cout << " : error '" << err << "' at:" << std::endl << pszEnd << std::endl;
-	};
-
-	auto jv = parser.Parse(&walker, psz, &pszEnd);
-	if (jv == false)
+template<class _Walker>
+std::unique_ptr<char[]> load_json_from_file(_Walker& walker, const char* path)
+{
+	size_t length;
+	std::unique_ptr<char[]> psz = load_text_from_file(path, length);
+	if (psz != nullptr)
 	{
-		delete[] psz;
-		return nullptr;
+		const char* pszEnd = psz.get() + length;
+
+		walker.ErrorReport = [path, psz = psz.get()](const char* err, const char* stoped)
+		{
+			char* newline = (char*)strchr(stoped, '\r');
+			if (newline != nullptr) *newline = 0;
+
+			report_file_location(path, psz, stoped);
+			std::cout << " : error '" << err << "' at:" << std::endl << stoped << std::endl;
+		};
+
+		json::parser parser;
+		auto jv = parser.Parse(&walker, psz.get(), &pszEnd);
+		if (jv == false)
+			psz = nullptr;
 	}
 
-	return std::unique_ptr<char[]>{ psz };
+	return psz;
 }
 
 void json5_vistor(const char* path)
 {
-	json5::singlebyte::JSON_DebugWalker walker;
+	json::walker walker{ 1024 };
 	auto buffer = load_json_from_file(walker, path);
-/*
-	if (buffer)
+	if (buffer != nullptr && walker.Value() != nullptr)
 	{
-		singlebyte::JSON_Vistor(parser.Value(), 
+		walker.Value()->Vistor( 
 			[](const json5::value* js, const json5::value* parent)
 			{
-				if (parent != nullptr && singlebyte::JSON_GetType(parent) == JSON_Type::Object)
+				if (parent != nullptr && parent->GetType() == json5::JSON_Type::Object)
 				{
-					auto name = singlebyte::JSON_GetName(js);
+					auto name = js->GetName();
 					std::cout << "\"" << name << "\":";
 				}
 
-				switch (singlebyte::JSON_GetType(js))
+				switch (js->GetType())
 				{
-				case JSON_Type::Nullptr:
+				case json5::JSON_Type::Nullptr:
 					std::cout << "null";
 					break;
-				case JSON_Type::String:
-					std::cout << "\"" << singlebyte::JSON_GetString(js) << "\"";
+				case json5::JSON_Type::String:
+					std::cout << "\"" << js->GetString() << "\"";
 					break;
-				case JSON_Type::Double:
+				case json5::JSON_Type::Double:
 					std::cout << js->f;
 					break;
-				case JSON_Type::Long:
+				case json5::JSON_Type::Long:
 					std::cout << js->l;
 					break;
-				case JSON_Type::Boolean:
+				case json5::JSON_Type::Boolean:
 					std::cout << (js->i ? "true" : "false");
 					break;
 				default:
@@ -105,7 +113,6 @@ void json5_vistor(const char* path)
 				std::cout << std::endl;
 		});
 	}
-*/
 }
 
 namespace json5

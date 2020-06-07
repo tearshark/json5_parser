@@ -20,6 +20,10 @@ namespace json5
 #include "json5_parser/parser.inl"
 #include "json5_parser/debug_walker.inl"
 #include "json5_parser/dom_walker.inl"
+
+		typedef JSON_Parser parser;
+		typedef JSON_Value value;
+		typedef JSON_DOMWalker walker;
 	}
 
 #include "json5_parser/xchar/xchar_undef.h"
@@ -30,11 +34,17 @@ namespace json5
 #include "json5_parser/parser.inl"
 #include "json5_parser/debug_walker.inl"
 #include "json5_parser/dom_walker.inl"
+
+		typedef JSON_Parser parser;
+		typedef JSON_Value value;
+		typedef JSON_DOMWalker walker;
 	}
 
-	typedef singlebyte::JSON_Parser parser;
-	typedef unicode::JSON_Parser wparser;
+	typedef singlebyte::parser parser;
+	typedef singlebyte::value value;
+	typedef singlebyte::walker walker;
 
-	typedef singlebyte::JSON_Value value;
-	typedef unicode::JSON_Value wvalue;
+	typedef unicode::parser wparser;
+	typedef unicode::value wvalue;
+	typedef unicode::walker wwalker;
 }

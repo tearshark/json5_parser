@@ -27,8 +27,8 @@ private:
 	bool parse_start(LPCXSTR& s, LPCXSTR e);
 	bool parse_pair(LPCXSTR& s, LPCXSTR e);
 	bool parse_value(LPCXSTR& s, LPCXSTR e);
-	bool parse_object(void* parent, LPCXSTR& s, LPCXSTR e);
-	bool parse_array(void* parent, LPCXSTR& s, LPCXSTR e);
+	bool parse_object(void* const parent, LPCXSTR& s, LPCXSTR e);
+	bool parse_array(void* const parent, LPCXSTR& s, LPCXSTR e);
 	bool parse_string(LPCXSTR& s, LPCXSTR e, int nEndChar);
 	bool parse_number(LPCXSTR& s, LPCXSTR e) noexcept;
 

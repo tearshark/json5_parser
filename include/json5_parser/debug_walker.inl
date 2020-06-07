@@ -20,14 +20,14 @@ struct JSON_DebugWalker : public JSON_Walker
 		PrintTable();
 		std::cout << "null," << std::endl;
 	}
-	virtual void* PushObject() override
+	virtual void* PushObject(bool) override
 	{
 		PrintTable();
 		++tabCount;
 		std::cout << "{" << std::endl;
 		return nullptr;
 	}
-	virtual void* PushArray() override
+	virtual void* PushArray(bool) override
 	{
 		PrintTable();
 		++tabCount;

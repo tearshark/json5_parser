@@ -8,8 +8,8 @@ struct JSON_String
 struct JSON_Walker
 {
 	virtual void PushNull() = 0;
-	virtual void* PushObject() = 0;
-	virtual void* PushArray() = 0;
+	virtual void* PushObject(bool root) = 0;
+	virtual void* PushArray(bool root) = 0;
 	virtual void PushString(JSON_String str) = 0;
 	virtual void PushDouble(double value) = 0;
 	virtual void PushLong(JSON_Type type, int64_t value) = 0;
@@ -26,8 +26,8 @@ struct JSON_Walker
 struct JSON_DummyWalker : public JSON_Walker
 {
 	virtual void PushNull() override {}
-	virtual void* PushObject() override { return nullptr; }
-	virtual void* PushArray() override { return nullptr; }
+	virtual void* PushObject(bool) override { return nullptr; }
+	virtual void* PushArray(bool) override { return nullptr; }
 	virtual void PushString(JSON_String str) override {}
 	virtual void PushDouble(double) override {}
 	virtual void PushLong(JSON_Type, int64_t) override {}

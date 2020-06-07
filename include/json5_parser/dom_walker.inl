@@ -20,40 +20,39 @@ struct alignas(32) JSON_Value
 
 	alignas(8)
 	JSON_Value* 			prev;			//Previous sibling node, when the parent is an object or an array.
+
+
+	inline JSON_Type GetType() const noexcept
+	{
+		return (JSON_Type)(this->type & JSON_Type::LONG_MASK);
+	}
+
+	size_t ElementsCount() const noexcept;
+	std::basic_string<XCHAR> GetName() const;
+	std::basic_string<XCHAR> GetString() const;
+
+	template<class _Vistor>
+	void ForeachElements(const _Vistor& vistor) const
+	{
+		if (this->type == JSON_Type::Object || this->type == JSON_Type::Array)
+			for (const JSON_Value* e = this->elements; e != nullptr; e = e->prev)
+			{
+				vistor(e);
+			}
+	}
+
+	template<class _Vistor>
+	void Vistor(const _Vistor& vistor, const JSON_Value* jparent = nullptr) const
+	{
+		vistor(this, jparent);
+
+		if (this->type == JSON_Type::Object || this->type == JSON_Type::Array)
+			for (const JSON_Value* e = this->elements; e != nullptr; e = e->prev)
+			{
+				e->Vistor(vistor, this);
+			}
+	}
 };
-
-inline JSON_Type JSON_GetType(const JSON_Value* jv)
-{
-	return (JSON_Type)(jv->type & JSON_Type::LONG_MASK);
-}
-
-size_t JSON_ElementsCount(const JSON_Value* jv);
-LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept;
-std::basic_string<XCHAR> JSON_GetName(const JSON_Value* jv);
-std::basic_string<XCHAR> JSON_GetString(const JSON_Value* jv);
-
-
-template<class _Vistor>
-void JSON_ForeachElements(const JSON_Value* jv, const _Vistor& vistor)
-{
-	if (JSON_GetType(jv) == JSON_Type::Object || JSON_GetType(jv) == JSON_Type::Array)
-		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->prev)
-		{
-			vistor(e);
-		}
-}
-
-template<class _Vistor>
-void JSON_Vistor(const JSON_Value* jv, const _Vistor& vistor, const JSON_Value* jparent = nullptr)
-{
-	vistor(jv, jparent);
-
-	if (JSON_GetType(jv) == JSON_Type::Object || JSON_GetType(jv) == JSON_Type::Array)
-		for (const JSON_Value* e = jv->elements; e != nullptr; e = e->prev)
-		{
-			JSON_Vistor(e, vistor, jv);
-		}
-}
 
 struct JSON_Alloctor
 {
@@ -76,11 +75,30 @@ private:
 
 struct JSON_DOMWalker : public JSON_Walker
 {
+	std::function<void(LPCXSTR err, LPCXSTR stoped)> ErrorReport;
+
 	JSON_DOMWalker(size_t nNunBatch);
+	~JSON_DOMWalker();
 
 	const JSON_Value* Value() const  noexcept { return m_pRootValue; }
 	size_t Count() const  noexcept { return m_Alloctor.size(); }
+
+	virtual void PushNull() override;
+	virtual void* PushObject(bool root) override;
+	virtual void* PushArray(bool root) override;
+	virtual void PushString(JSON_String str) override;
+	virtual void PushDouble(double value) override;
+	virtual void PushLong(JSON_Type type, int64_t value) override;
+	virtual void PushBoolean(bool value) override;
+	virtual void PushName(JSON_String name) override;
+	virtual void PopObject(void*) override;
+	virtual void PopArray(void*) override;
+	virtual void ErrorStop(LPCXSTR err, LPCXSTR stoped) override;
+
 private:
 	JSON_Alloctor		m_Alloctor;
 	JSON_Value*			m_pRootValue;
+	JSON_String			m_ChildName;
+
+	void SetNameIf(JSON_Value* v);
 };

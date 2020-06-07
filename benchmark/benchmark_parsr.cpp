@@ -6,6 +6,8 @@
 #include "json5_parser/json5_parser.h"
 #include "rapidjson/document.h"
 
+namespace json = json5::singlebyte;
+
 const int N = 200;
 
 std::tuple<char*, size_t> load_from_file(const char* path)
@@ -44,7 +46,7 @@ void benchmark_json5_parser(const char* path, Args&&... args)
 
 		for (int i = 0; i < N; ++i)
 		{
-			json5::parser parser;
+			json::parser parser;
 			_Walker walker{ args... };
 			auto jv = parser.Parse(&walker, psz, &pszEnd);
 			if (jv == false)
@@ -98,14 +100,14 @@ int main(int argc, char* argv[])
 	std::cout << "dummy" << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
-		benchmark_json5_parser<json5::singlebyte::JSON_DummyWalker>(argv[i]);
+		benchmark_json5_parser<json::JSON_DummyWalker>(argv[i]);
 	}
 
 	std::cout << std::endl;
 	std::cout << "DOM" << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
-		benchmark_json5_parser<json5::singlebyte::JSON_DummyWalker>(argv[i]);
+		benchmark_json5_parser<json::JSON_DummyWalker>(argv[i]);
 	}
 
 	std::cout << std::endl;
