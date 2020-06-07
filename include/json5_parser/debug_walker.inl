@@ -1,11 +1,11 @@
 ﻿
 namespace
 {
-	void print_string_view(std::string_view sv)
+	inline void print_string_view(std::string_view sv)
 	{
 		std::cout << sv;
 	}
-	void print_string_view(std::wstring_view sv)
+	inline void print_string_view(std::wstring_view sv)
 	{
 		std::wcout << sv;
 	}

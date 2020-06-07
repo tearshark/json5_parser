@@ -24,6 +24,14 @@ if(OPT_ENABLE_JSON5)
 	set(JSON_ENABLE_JSON5 1)
 	set(JSON5_ENABLE_COMMENTS 1)
 endif()
+option(OPT_ENABLE_DEBUG_WALKER "Enable debug walker" OFF)
+if(OPT_ENABLE_DEBUG_WALKER)
+	set(JSON_ENABLE_DEBUG_WALKER 1)
+endif()
+option(OPT_ENABLE_DOM_WALKER "Enable default DOM walker" ON)
+if(OPT_ENABLE_DOM_WALKER)
+	set(JSON_ENABLE_DOM_WALKER 1)
+endif()
 
 configure_file(
 ${PROJECT_SOURCE_DIR}/config.h.in

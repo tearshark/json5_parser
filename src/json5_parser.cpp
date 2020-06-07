@@ -28,8 +28,11 @@ namespace unicode
 #include "json5_parser/walker.inl"
 #include "json5_parser/parser.inl"
 #include "parser.hpp"
+
+#if JSON_ENABLE_DOM_WALKER
 #include "json5_parser/dom_walker.inl"
 #include "dom_walker.hpp"
+#endif
 }
 
 #include "json5_parser/xchar/xchar_undef.h"
@@ -42,8 +45,11 @@ namespace singlebyte
 #include "json5_parser/walker.inl"
 #include "json5_parser/parser.inl"
 #include "parser.hpp"
+
+#if JSON_ENABLE_DOM_WALKER
 #include "json5_parser/dom_walker.inl"
 #include "dom_walker.hpp"
+#endif
 }
 
 }

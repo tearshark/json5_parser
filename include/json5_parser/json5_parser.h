@@ -18,12 +18,16 @@ namespace json5
 	{
 #include "json5_parser/walker.inl"
 #include "json5_parser/parser.inl"
-//#include "json5_parser/debug_walker.inl"
-#include "json5_parser/dom_walker.inl"
-
 		typedef JSON_Parser parser;
+
+#if JSON_ENABLE_DEBUG_WALKER
+#include "json5_parser/debug_walker.inl"
+#endif
+#if JSON_ENABLE_DOM_WALKER
+#include "json5_parser/dom_walker.inl"
 		typedef JSON_Value value;
 		typedef JSON_DOMWalker walker;
+#endif
 	}
 
 #include "json5_parser/xchar/xchar_undef.h"
@@ -32,19 +36,25 @@ namespace json5
 	{
 #include "json5_parser/walker.inl"
 #include "json5_parser/parser.inl"
-//#include "json5_parser/debug_walker.inl"
-#include "json5_parser/dom_walker.inl"
-
 		typedef JSON_Parser parser;
+
+#if JSON_ENABLE_DEBUG_WALKER
+#include "json5_parser/debug_walker.inl"
+#endif
+#if JSON_ENABLE_DOM_WALKER
+#include "json5_parser/dom_walker.inl"
 		typedef JSON_Value value;
 		typedef JSON_DOMWalker walker;
+#endif
 	}
 
 	typedef singlebyte::parser parser;
+	typedef unicode::parser wparser;
+
+#if JSON_ENABLE_DOM_WALKER
 	typedef singlebyte::value value;
 	typedef singlebyte::walker walker;
-
-	typedef unicode::parser wparser;
 	typedef unicode::value wvalue;
 	typedef unicode::walker wwalker;
+#endif
 }

@@ -62,8 +62,6 @@ std::unique_ptr<wchar_t[]> load_json_from_file(_Walker& walker, const char* path
 	std::unique_ptr<wchar_t[]> psz = load_text_from_file(path, length);
 	if (psz)
 	{
-		const wchar_t* pszEnd = psz.get() + length;
-
 		walker.ErrorReport = [path, psz = psz.get()](const wchar_t* err, const wchar_t* stoped)
 		{
 			wchar_t* newline = const_cast<wchar_t*>(wcschr(stoped, '\r'));
@@ -74,7 +72,9 @@ std::unique_ptr<wchar_t[]> load_json_from_file(_Walker& walker, const char* path
 		};
 
 		json::parser parser;
-		auto jv = parser.Parse(&walker, psz.get(), &pszEnd);
+
+		const char* pszEnd = psz.get() + length;
+		bool jv = parser.Parse(&walker, psz.get(), &pszEnd);
 		if (jv == false)
 			psz = nullptr;
 	}

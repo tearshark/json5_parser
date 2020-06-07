@@ -22,7 +22,7 @@ struct alignas(32) JSON_Value
 	JSON_Value* 			prev;			//Previous sibling node, when the parent is an object or an array.
 
 
-	inline JSON_Type GetType() const noexcept
+	JSON_Type GetType() const noexcept
 	{
 		return (JSON_Type)(this->type & JSON_Type::LONG_MASK);
 	}

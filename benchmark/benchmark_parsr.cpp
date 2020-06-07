@@ -40,15 +40,15 @@ void benchmark_json5_parser(const char* path, Args&&... args)
 	std::tie(psz, length) = load_from_file(path);
 	if (psz != nullptr)
 	{
-		const char* pszEnd = psz + length;
-
 		auto start = std::chrono::high_resolution_clock::now();
 
 		for (int i = 0; i < N; ++i)
 		{
 			json::parser parser;
 			_Walker walker(std::forward<Args>(args)...);
-			auto jv = parser.Parse(&walker, psz, &pszEnd);
+
+			const char* pszEnd = psz + length;
+			bool jv = parser.Parse(&walker, psz, &pszEnd);
 			if (jv == false)
 			{
 				std::cout << "failed." << std::endl;
