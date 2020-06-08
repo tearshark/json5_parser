@@ -125,11 +125,11 @@ namespace
 		//返回值:已经转换的整数
 		static int64_t convert_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
 		{
-			const int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
-			const int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
-			const int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
-			const int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
-			const int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
+			constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
+			constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
+			constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
+			constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
+			constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
 
 			const type* s = psz;
 			for (; s < e; )
@@ -160,7 +160,9 @@ namespace
 				{
 					if (result > LIMIT_LONG_99) break;
 
-					result = result * 100 + (s[0] - '0') * 10 + (s[1] - '0');
+					//int val = x_mm_cvt_i8x4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
+					int val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
+					result = result * 100 + val;
 
 					psz = s + 2;
 					return result;
@@ -169,7 +171,8 @@ namespace
 				{
 					if (result > LIMIT_LONG_9) break;
 
-					result = result * 10 + (*s - '0');
+					int val = *s - (type)'0';
+					result = result * 10 + val;
 
 					psz = s + 1;
 					return result;
@@ -185,14 +188,15 @@ namespace
 			{
 				if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
 				{
-					if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= '8')
+					if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= (type)'8')
 					{
 						overflow = true;
 						break;
 					}
 				}
 
-				result = result * 10 + (*s - '0');
+				int val = *s - (type)'0';
+				result = result * 10 + val;
 			}
 
 			psz = s;
@@ -234,11 +238,11 @@ namespace
 		//返回值:已经转换的整数
 		static int64_t convert_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
 		{
-			const int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
-			const int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
-			const int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
-			const int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
-			const int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
+			constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
+			constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
+			constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
+			constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
+			constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
 
 			const type* s = psz;
 			for (; s < e; )
@@ -269,7 +273,9 @@ namespace
 				{
 					if (result > LIMIT_LONG_99) break;
 
-					result = result * 100 + (s[0] - '0') * 10 + (s[1] - '0');
+					//int val = x_mm_cvt_i8x4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
+					int val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
+					result = result * 100 + val;
 
 					psz = s + 2;
 					return result;
@@ -278,7 +284,8 @@ namespace
 				{
 					if (result > LIMIT_LONG_9) break;
 
-					result = result * 10 + (*s - '0');
+					int val = *s - (type)'0';
+					result = result * 10 + val;
 
 					psz = s + 1;
 					return result;
@@ -301,7 +308,8 @@ namespace
 					}
 				}
 
-				result = result * 10 + (*s - '0');
+				int val = *s - (type)'0';
+				result = result * 10 + val;
 			}
 
 			psz = s;
@@ -342,11 +350,11 @@ namespace
 		//返回值:已经转换的整数
 		static int64_t convert_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
 		{
-			const int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
-			const int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
-			const int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
-			const int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
-			const int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
+			constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
+			constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
+			constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
+			constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
+			constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
 
 			const type* s = psz;
 			for (; s < e; )
@@ -377,7 +385,9 @@ namespace
 				{
 					if (result > LIMIT_LONG_99) break;
 
-					result = result * 100 + (s[0] - '0') * 10 + (s[1] - '0');
+					//int val = x_mm_cvt_i8x4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
+					int val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
+					result = result * 100 + val;
 
 					psz = s + 2;
 					return result;
@@ -386,7 +396,8 @@ namespace
 				{
 					if (result > LIMIT_LONG_9) break;
 
-					result = result * 10 + (*s - '0');
+					int val = *s - (type)'0';
+					result = result * 10 + val;
 
 					psz = s + 1;
 					return result;
@@ -409,7 +420,8 @@ namespace
 					}
 				}
 
-				result = result * 10 + (*s - '0');
+				int val = *s - (type)'0';
+				result = result * 10 + val;
 			}
 
 			psz = s;
@@ -489,7 +501,7 @@ namespace
 
 		intptr_t exp = 0;
 
-		double dval;
+		double dval = 0.0f;
 		bool useDouble = false;	//初始没溢出，如果整数溢出了，则需要使用浮点数算法
 		int64_t i64 = char_selector::convert_long(0, psz, pszEnd, useDouble);
 		if (useDouble)
@@ -509,8 +521,8 @@ namespace
 			if (!useDouble)
 			{//还未溢出，解析小数点后面的整数
 				i64 = char_selector::convert_long(i64, psz, pszEnd, useDouble);
-				dval = (double)i64;
 			}
+			dval = (double)i64;
 
 			if (useDouble)
 			{

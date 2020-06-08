@@ -244,9 +244,12 @@ LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept
 							if (sizeof(*psz) == sizeof(char))
 							{
 								char buffer[8];
-								//int nCvt = sizeof(buffer);
-								//wctomb_s(&nCvt, buffer, sizeof(buffer), wc);
+#ifdef _MSC_VER
+								int nCvt = sizeof(buffer);
+								wctomb_s(&nCvt, buffer, sizeof(buffer), wc);
+#else
 								int nCvt = wctomb(buffer, wc);
+#endif
 								for (int x = 0; x < nCvt; ++x)
 									*psz++ = buffer[x];
 							}
