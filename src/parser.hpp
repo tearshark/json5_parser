@@ -672,130 +672,33 @@ int64_t JSON_Parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noex
 	return lValue;
 }
 
-bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
+#if JSON_ENABLE_SIMD_PARSER
+
+bool JSON_Parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
 {
-	bool minus = false;
+	auto result = simd_double_parser::parser(psz, e);
+	if (std::get<1>(result) == simd_double_parser::parser_result::Double)
+	{
+		m_pWalker->PushDouble(std::get<0>(result).d);
+		return true;
+	}
+	else if (std::get<1>(result) == simd_double_parser::parser_result::Long)
+	{
+		m_pWalker->PushLong(JSON_Type::DecimalLong, std::get<0>(result).l);
+		return true;
+	}
+	else
+	{
+		set_error(X_T("invalid number."));
+		return false;
+	}
+}
+
+#else
+
+bool JSON_Parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
+{
 	LPCXSTR s = psz;
-
-	if (*s == '+')
-	{//+开头，十进制或者浮点数
-		++s;
-		if (s >= e)
-		{
-			set_error(X_T("unexpected end."));
-			RET_NULL;
-		}
-	}
-	else if (*s == '-')
-	{//-开头，十进制或者浮点数
-		++s;
-		if (s >= e)
-		{
-			set_error(X_T("unexpected end."));
-			RET_NULL;
-		}
-		minus = true;
-	}
-	else if (*s == '0' && s + 1 < e)
-	{//0开头，可能是0，十六进制，二进制，八进制
-		if (s[1] != '.' && s[1] != 'e' && s[1] != 'E')
-		{
-#if JSON_ENABLE_JSON5
-			if (_json_hex_leader(s[1]))
-			{//0x，十六进制
-#if JSON_ENABLE_JSON5
-				s += 2;
-				if (s >= e)
-				{
-					set_error(X_T("unexpected end."));
-					RET_NULL;
-				}
-
-				uint64_t i64 = 0;
-				while (s < e && _json_is_hex(*s) && i64 <= 0x0fffffffffffffffULL)
-				{
-					int32_t i = *s++;
-					if (_json_is_digit(i))
-						i = i - '0';
-					else if (i >= 'a' && i <= 'f')
-						i = i - 'a' + 10;
-					else
-						i = i - 'A' + 10;
-
-					i64 = (i64 << 4) | i;
-				}
-
-				m_pWalker->PushLong(JSON_Type::HexLong, i64);
-
-				psz = s;
-				return true;
-#else
-				set_error(X_T("numbers cannot be hex."));
-				return false;
-#endif
-			}
-			if (_json_bin_leader(s[1]))
-			{//0b，二进制
-#if JSON_ENABLE_JSON5
-				s += 2;
-				if (s >= e)
-				{
-					set_error(X_T("unexpected end."));
-					RET_NULL;
-				}
-
-				uint64_t i64 = 0;
-				while (s < e && _json_is_hex(*s) && i64 <= 0x7fffffffffffffffULL)
-				{
-					int32_t i = *s++;
-					i = i - '0';
-
-					i64 = (i64 << 1) | i;
-				}
-
-				m_pWalker->PushLong(JSON_Type::BinaryLong, i64);
-
-				psz = s;
-				return true;
-#else
-				set_error(X_T("numbers cannot be binary."));
-				return false;
-#endif
-			}
-			if (_json_is_oct(s[1]))
-			{//0[1-7]，八进制
-#if JSON_ENABLE_JSON5
-				s += 1;
-
-				uint64_t i64 = 0;
-				while (s < e && _json_is_oct(*s) && i64 < 0x7fffffffffffffffULL)
-				{
-					int32_t i = *s++;
-					i = i - '0';
-
-					i64 = (i64 << 3) | i;
-				}
-
-				m_pWalker->PushLong(JSON_Type::OctalLong, i64);
-
-				psz = s;
-				return true;
-#else
-				set_error(X_T("numbers cannot be octal."));
-				return false;
-#endif
-			}
-#endif
-			if(_json_is_digit(s[1]))
-			{//089
-				;
-#if !JSON_ENABLE_JSON5
-				set_error(X_T("numbers cannot have leading zeroes."));
-				return false;
-#endif
-			}
-		}
-	}
 
 	//十进制整数或者浮点数
 	uint64_t i64 = 0;
@@ -963,4 +866,91 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 
 	psz = s;
 	return true;
+}
+
+#endif
+
+bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
+{
+	LPCXSTR s = psz;
+
+	if (*s == '0' && s + 1 < e && s[1] != '.' && (s[1] | 32) != 'e')
+	{//0开头，可能是0，十六进制，二进制，八进制
+#if JSON_ENABLE_JSON5
+		if (_json_hex_leader(s[1]))
+		{//0x，十六进制
+			s += 2;
+			if (s >= e)
+			{
+				set_error(X_T("unexpected end."));
+				RET_NULL;
+			}
+
+			uint64_t i64 = 0;
+			while (s < e && _json_is_hex(*s) && i64 <= 0x0fffffffffffffffULL)
+			{
+				int32_t i = *s++;
+				if (_json_is_digit(i))
+					i = i - '0';
+				else
+					i = (i | 32) - ('a' + 10);
+
+				i64 = (i64 << 4) | i;
+			}
+
+			m_pWalker->PushLong(JSON_Type::HexLong, i64);
+
+			psz = s;
+			return true;
+		}
+		if (_json_bin_leader(s[1]))
+		{//0b，二进制
+			s += 2;
+			if (s >= e)
+			{
+				set_error(X_T("unexpected end."));
+				RET_NULL;
+			}
+
+			uint64_t i64 = 0;
+			while (s < e && _json_is_hex(*s) && i64 <= 0x7fffffffffffffffULL)
+			{
+				int32_t i = *s++;
+				i = i - '0';
+
+				i64 = (i64 << 1) | i;
+			}
+
+			m_pWalker->PushLong(JSON_Type::BinaryLong, i64);
+
+			psz = s;
+			return true;
+		}
+		if (_json_is_oct(s[1]))
+		{//0[1-7]，八进制
+			s += 1;
+
+			uint64_t i64 = 0;
+			while (s < e && _json_is_oct(*s) && i64 < 0x7fffffffffffffffULL)
+			{
+				int32_t i = *s++;
+				i = i - '0';
+
+				i64 = (i64 << 3) | i;
+			}
+
+			m_pWalker->PushLong(JSON_Type::OctalLong, i64);
+
+			psz = s;
+			return true;
+		}
+#endif
+		if(_json_is_digit(s[1]))
+		{//089
+			set_error(X_T("numbers cannot have leading zeroes."));
+			return false;
+		}
+	}
+
+	return parse_double(psz, e);
 }

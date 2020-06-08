@@ -100,5 +100,5 @@ private:
 	JSON_Value*			m_pRootValue;
 	JSON_String			m_ChildName;
 
-	void SetNameIf(JSON_Value* v);
+	void SetNameIf(JSON_Value* v) noexcept;
 };

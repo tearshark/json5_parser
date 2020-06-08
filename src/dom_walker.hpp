@@ -37,6 +37,9 @@ JSON_Value* JSON_Alloctor::alloc()
 {
 	if (m_pNextAlloc >= m_pEndAlloc)
 	{
+		if (m_nAllocedCount > m_nNumBatch * 2)
+			m_nNumBatch *= 2;
+
 		size_t nNumAlloc = sizeof(JSON_Value) * m_nNumBatch;
 
 		char* pNode = (char*)_aligned_malloc(nNumAlloc, alignof(JSON_Value));
@@ -67,7 +70,7 @@ JSON_DOMWalker::~JSON_DOMWalker()
 {
 }
 
-void JSON_DOMWalker::SetNameIf(JSON_Value* v)
+inline void JSON_DOMWalker::SetNameIf(JSON_Value* v) noexcept
 {
 	if (m_pRootValue->type == JSON_Type::Object)
 	{

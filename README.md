@@ -11,23 +11,23 @@
 
 在I7 8700K 3.7GHz(OC 4.3GHz)，使用VS 2019 / clang 9.0.0编译(取成绩好的编译器结果），测试data目录下附带的三个json，获得数据如下：<br>
 
-###### 1、关闭json5选项
+###### 1、关闭json5选项，开启simd选项
 ```
 dummy
-benchmark_json5_parser parse file: .\data\canada.json
-parse 2251060 bytes cost 0.706516 s, speeds is 607.708 MB/s
-benchmark_json5_parser parse file: .\data\twitter.json
-parse 631514 bytes cost 0.12996 s, speeds is 926.84 MB/s
-benchmark_json5_parser parse file: .\data\citm_catalog.json
-parse 1727204 bytes cost 0.222991 s, speeds is 1477.36 MB/s
+benchmark_json5_parser parse file: ./data/canada.json
+parse 2251060 bytes cost 0.471473 s, speeds is 910.669 MB/s
+benchmark_json5_parser parse file: ./data/twitter.json
+parse 631514 bytes cost 0.103502 s, speeds is 1163.76 MB/s
+benchmark_json5_parser parse file: ./data/citm_catalog.json
+parse 1727204 bytes cost 0.217996 s, speeds is 1511.21 MB/s
 
 DOM
-benchmark_json5_parser parse file: .\data\canada.json
-parse 2251060 bytes cost 0.997353 s, speeds is 430.495 MB/s
-benchmark_json5_parser parse file: .\data\twitter.json
-parse 631514 bytes cost 0.138747 s, speeds is 868.142 MB/s
-benchmark_json5_parser parse file: .\data\citm_catalog.json
-parse 1727204 bytes cost 0.24073 s, speeds is 1368.5 MB/s
+benchmark_json5_parser parse file: ./data/canada.json
+parse 2251060 bytes cost 0.556339 s, speeds is 771.752 MB/s
+benchmark_json5_parser parse file: ./data/twitter.json
+parse 631514 bytes cost 0.10866 s, speeds is 1108.52 MB/s
+benchmark_json5_parser parse file: ./data/citm_catalog.json
+parse 1727204 bytes cost 0.220677 s, speeds is 1492.85 MB/s
 
 benchmark_rapidjson parse file: ./data/canada.json
 parse 2251060 bytes cost 0.74908 s, speeds is 573.177 MB/s
@@ -40,46 +40,46 @@ parse 1727204 bytes cost 0.37469 s, speeds is 879.227 MB/s
 
 | 项目                | 编译器 | json文件          | 文件大小（Bytes） | 重复次数 | 用时(秒) | 速度(MB/S)  |
 | :------------------ | :----: | :---------------- | :---------------: | :------: | :------: | :---------: |
-| json5_parser(dummy) |  msvc  | canada.json       |      2251060      |   200    | 0.706516 | **607.708** |
-| json5_parser(dummy) |  msvc  | twitter.json      |      631514       |   200    | 0.125344 | **926.84**  |
-| json5_parser(dummy) |  msvc  | citm_catalog.json |      1727204      |   200    | 0.218263 | **1477.36** |
-| json5_parser(DOM)   |  msvc  | canada.json       |      2251060      |   200    | 0.997353 | **430.495** |
-| json5_parser(DOM)   |  msvc  | twitter.json      |      631514       |   200    | 0.138747 | **868.142** |
-| json5_parser(DOM)   |  msvc  | citm_catalog.json |      1727204      |   200    | 0.24073  | **1368.5**  |
+| json5_parser(dummy) | clang  | canada.json       |      2251060      |   200    | 0.471473 | **910.669** |
+| json5_parser(dummy) | clang  | twitter.json      |      631514       |   200    | 0.103502 | **1163.76** |
+| json5_parser(dummy) | clang  | citm_catalog.json |      1727204      |   200    | 0.217996 | **1511.21** |
+| json5_parser(DOM)   | clang  | canada.json       |      2251060      |   200    | 0.556339 | **771.752** |
+| json5_parser(DOM)   | clang  | twitter.json      |      631514       |   200    | 0.10866  | **1108.52** |
+| json5_parser(DOM)   | clang  | citm_catalog.json |      1727204      |   200    | 0.220677 | **1492.85** |
 | rapidjson           | clang  | canada.json       |      2251060      |   200    | 0.74908  | **573.177** |
 | rapidjson           | clang  | twitter.json      |      631514       |   200    | 0.304658 | **395.367** |
 | rapidjson           | clang  | citm_catalog.json |      1727204      |   200    | 0.37469  | **879.227** |
 
 <br>
 
-###### 2、开启json5选项
+###### 2、开启json5选项，开启simd选项
 ```
 dummy
-benchmark_json5_parser parse file: .\data\canada.json
-parse 2251060 bytes cost 0.756322 s, speeds is 567.689 MB/s
-benchmark_json5_parser parse file: .\data\twitter.json
-parse 631514 bytes cost 0.158458 s, speeds is 760.148 MB/s
-benchmark_json5_parser parse file: .\data\citm_catalog.json
-parse 1727204 bytes cost 0.299909 s, speeds is 1098.46 MB/s
+benchmark_json5_parser parse file: ./data/canada.json
+parse 2251060 bytes cost 0.522491 s, speeds is 821.748 MB/s
+benchmark_json5_parser parse file: ./data/twitter.json
+parse 631514 bytes cost 0.115304 s, speeds is 1044.65 MB/s
+benchmark_json5_parser parse file: ./data/citm_catalog.json
+parse 1727204 bytes cost 0.246969 s, speeds is 1333.92 MB/s
 
 DOM
-benchmark_json5_parser parse file: .\data\canada.json
-parse 2251060 bytes cost 1.04293 s, speeds is 411.682 MB/s
-benchmark_json5_parser parse file: .\data\twitter.json
-parse 631514 bytes cost 0.165559 s, speeds is 727.547 MB/s
-benchmark_json5_parser parse file: .\data\citm_catalog.json
-parse 1727204 bytes cost 0.307497 s, speeds is 1071.35 MB/s
+benchmark_json5_parser parse file: ./data/canada.json
+parse 2251060 bytes cost 0.587434 s, speeds is 730.9 MB/s
+benchmark_json5_parser parse file: ./data/twitter.json
+parse 631514 bytes cost 0.116074 s, speeds is 1037.72 MB/s
+benchmark_json5_parser parse file: ./data/citm_catalog.json
+parse 1727204 bytes cost 0.255583 s, speeds is 1288.97 MB/s
 ```
 <br>
 
 | 项目                | 编译器 | json文件          | 文件大小（Bytes） | 重复次数 | 用时(秒) | 速度(MB/S)  |
 | :------------------ | :----: | :---------------- | :---------------: | :------: | :------: | :---------: |
-| json5_parser(dummy) |  msvc  | canada.json       |      2251060      |   200    | 0.756322 | **567.689** |
-| json5_parser(dummy) |  msvc  | twitter.json      |      631514       |   200    | 0.158458 | **760.148** |
-| json5_parser(dummy) |  msvc  | citm_catalog.json |      1727204      |   200    | 0.299909 | **1098.46** |
-| json5_parser(DOM)   |  msvc  | canada.json       |      2251060      |   200    | 1.04293  | **411.682** |
-| json5_parser(DOM)   |  msvc  | twitter.json      |      631514       |   200    | 0.165559 | **727.547** |
-| json5_parser(DOM)   |  msvc  | citm_catalog.json |      1727204      |   200    | 0.307497 | **1071.35** |
+| json5_parser(dummy) | clang  | canada.json       |      2251060      |   200    | 0.522491 | **821.748** |
+| json5_parser(dummy) | clang  | twitter.json      |      631514       |   200    | 0.115304 | **1044.65** |
+| json5_parser(dummy) | clang  | citm_catalog.json |      1727204      |   200    | 0.246969 | **1333.92** |
+| json5_parser(DOM)   | clang  | canada.json       |      2251060      |   200    | 0.587434 |  **730.9**  |
+| json5_parser(DOM)   | clang  | twitter.json      |      631514       |   200    | 0.116074 | **1037.72** |
+| json5_parser(DOM)   | clang  | citm_catalog.json |      1727204      |   200    | 0.255583 | **1288.97** |
 
 <br>
 

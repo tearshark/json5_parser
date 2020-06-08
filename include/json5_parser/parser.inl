@@ -31,6 +31,7 @@ private:
 	bool parse_array(void* const parent, LPCXSTR& s, LPCXSTR e);
 	bool parse_string(LPCXSTR& s, LPCXSTR e, int nEndChar);
 	bool parse_number(LPCXSTR& s, LPCXSTR e) noexcept;
+	bool parse_double(LPCXSTR& s, LPCXSTR e) noexcept;
 
 	LPCXSTR _json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_String& name) noexcept;
 	void set_error(LPCXSTR e) noexcept;
