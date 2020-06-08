@@ -134,9 +134,11 @@ namespace
 			const type* s = psz;
 			for (; s < e; )
 			{
+				auto remaind = e - s;
+
 				__m128i i8x4 = load_xcharx4(s);
 				int mask = digit_mask(i8x4);
-				if (mask == 0xf)
+				if (mask == 0xf && remaind >= 4)
 				{
 					if (result > LIMIT_LONG_9999) break;
 
@@ -144,7 +146,7 @@ namespace
 					result = result * 10000 + val;
 					s += 4;
 				}
-				else if ((mask & 0x7) == 0x7)
+				else if ((mask & 0x7) == 0x7 && remaind >= 3)
 				{
 					if (result > LIMIT_LONG_999) break;
 
@@ -154,7 +156,7 @@ namespace
 					psz = s + 3;
 					return result;
 				}
-				else if ((mask & 0x3) == 0x3)
+				else if ((mask & 0x3) == 0x3 && remaind >= 2)
 				{
 					if (result > LIMIT_LONG_99) break;
 
@@ -179,7 +181,7 @@ namespace
 				}
 			}
 
-			for (; x_is_digit(*s); ++s)
+			for (; s < e && x_is_digit(*s); ++s)
 			{
 				if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
 				{
@@ -241,9 +243,11 @@ namespace
 			const type* s = psz;
 			for (; s < e; )
 			{
+				auto remaind = e - s;
+
 				__m128i i16x4 = load_xcharx4(s);
 				int mask = digit_mask(i16x4);
-				if (mask == 0xff)
+				if (mask == 0xff && remaind >= 4)
 				{
 					if (result > LIMIT_LONG_9999) break;
 
@@ -251,7 +255,7 @@ namespace
 					result = result * 10000 + val;
 					s += 4;
 				}
-				else if ((mask & 0x3f) == 0x3f)
+				else if ((mask & 0x3f) == 0x3f && remaind >= 3)
 				{
 					if (result > LIMIT_LONG_999) break;
 
@@ -261,7 +265,7 @@ namespace
 					psz = s + 3;
 					return result;
 				}
-				else if ((mask & 0x0f) == 0x0f)
+				else if ((mask & 0x0f) == 0x0f && remaind >= 2)
 				{
 					if (result > LIMIT_LONG_99) break;
 
@@ -286,7 +290,7 @@ namespace
 				}
 			}
 
-			for (; x_is_digit(*s); ++s)
+			for (; s < e && x_is_digit(*s); ++s)
 			{
 				if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
 				{
@@ -347,9 +351,11 @@ namespace
 			const type* s = psz;
 			for (; s < e; )
 			{
+				auto remaind = e - s;
+
 				__m128i i32x4 = load_xcharx4(s);
 				int mask = digit_mask(i32x4);
-				if (mask == 0xffff)
+				if (mask == 0xffff && remaind >= 4)
 				{
 					if (result > LIMIT_LONG_9999) break;
 
@@ -357,7 +363,7 @@ namespace
 					result = result * 10000 + val;
 					s += 4;
 				}
-				else if ((mask & 0x0fff) == 0x0fff)
+				else if ((mask & 0x0fff) == 0x0fff && remaind >= 3)
 				{
 					if (result > LIMIT_LONG_999) break;
 
@@ -367,7 +373,7 @@ namespace
 					psz = s + 3;
 					return result;
 				}
-				else if ((mask & 0x00ff) == 0x00ff)
+				else if ((mask & 0x00ff) == 0x00ff && remaind >= 2)
 				{
 					if (result > LIMIT_LONG_99) break;
 
@@ -392,7 +398,7 @@ namespace
 				}
 			}
 
-			for (; x_is_digit(*s); ++s)
+			for (; s < e && x_is_digit(*s); ++s)
 			{
 				if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
 				{
@@ -495,7 +501,7 @@ namespace
 			exp = psz - pszSaved;
 		}
 
-		if (*psz == '.')
+		if (psz < pszEnd && *psz == '.')
 		{//遇到小数点了
 			++psz;
 			const _CharType* pszDot = psz;
@@ -520,36 +526,42 @@ namespace
 			}
 		}
 
-		if (*psz && (*psz | 32) == 'e')
-		{
+		if (psz < pszEnd && (*psz | 32) == 'e')
+		{//解析指数
 			if (!useDouble)
-			{
+			{//如果之前是整数，则接下来要按照浮点数进行解析了
 				dval = (double)i64;
 				useDouble = true;
 			}
 			++psz;
 
 			bool expMinus = false;
-			if (*psz && *psz == '+')
+			if (psz < pszEnd && *psz == '+')
 			{
 				++psz;
 			}
-			else if (*psz && *psz == '-')
+			else if (psz < pszEnd && *psz == '-')
 			{
 				++psz;
 				expMinus = true;
 			}
 
-			bool overflow = false;	//初始没溢出，如果整数溢出了，则需要使用浮点数算法
+			if (psz >= pszEnd)
+			{
+				number_value nv = { 0 };
+				return { nv, parser_result::Invalid };
+			}
+
+			bool overflow = false;	//初始没溢出，如果整数溢出了，则认为这是一个无效的数
 			int64_t e2 = char_selector::convert_long(0, psz, pszEnd, overflow);
 
 			if (overflow || e2 > ((std::numeric_limits<int32_t>::max)() / 2))
 			{
 				number_value nv = { 0 };
-				s = psz;
 				return { nv, parser_result::Invalid };
 			}
 
+			//将指数累积上去
 			if (expMinus)
 				exp -= e2;
 			else
@@ -558,7 +570,7 @@ namespace
 
 		if (useDouble)
 		{
-			if (exp < -330)	//324 = 308 + 22
+			if (exp < -330)	//330 = 308 + 22
 			{
 				dval = -INFINITY;
 			}
@@ -567,7 +579,7 @@ namespace
 				dval = x_fast_path(dval, -308);
 				dval = x_fast_path(dval, exp + 308);
 			}
-			else if (exp > 330)
+			else if (exp > 330)	//330 = 308 + 22
 			{
 				dval = INFINITY;
 			}

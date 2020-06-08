@@ -700,6 +700,16 @@ bool JSON_Parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
 {
 	LPCXSTR s = psz;
 
+	bool minus = *s == '-';
+	if (minus) ++s;
+	else if (*s == '+') ++s;
+
+	if (s >= e)
+	{
+		set_error(X_T("unexpected end."));
+		RET_NULL;
+	}
+
 	//十进制整数或者浮点数
 	uint64_t i64 = 0;
 	double d = 0.0;

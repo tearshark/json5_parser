@@ -17,7 +17,7 @@ namespace json5
 {
 #include "json5_parser/xchar/xchar.h"
 #include "json5_parser_common.hpp"
-#define JSON_ENABLE_SIMD_PARSER	1
+
 #if JSON_ENABLE_SIMD_PARSER
 #include "simd_double_parser.h"
 #endif
