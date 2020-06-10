@@ -211,7 +211,14 @@ namespace
 
 		static __m128i load_xcharx4(const type* s) noexcept
 		{
+#if defined(_M_IX86)
+			const int32_t* v = (const int32_t*)(s);
+			return _mm_set_epi32(0, 0, v[1], v[0]);
+#elif defined (_M_X64)
 			return _mm_cvtsi64_si128(*(int64_t*)s);
+#else
+#error "Unknown platform"
+#endif
 		}
 
 		//i16x4是8个16位字母
@@ -575,9 +582,9 @@ namespace
 
 			//将指数累积上去
 			if (expMinus)
-				exp -= e2;
+				exp -= (intptr_t)e2;
 			else
-				exp += e2;
+				exp += (intptr_t)e2;
 		}
 
 		if (useDouble)

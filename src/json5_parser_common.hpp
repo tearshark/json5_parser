@@ -130,13 +130,13 @@ static const double JSON_E[] =
 	1e+301,1e+302,1e+303,1e+304,1e+305,1e+306,1e+307,1e+308
 };
 
-static inline double Pow10(int n)
+static inline double Pow10(int n) noexcept
 {
 	assert(n >= 0 && n <= 308);
 	return JSON_E[n];
 }
 
-static inline double FastPath(double significand, int exp)
+static inline double FastPath(double significand, int exp) noexcept
 {
 	if (exp < -308)
 		return 0.0;
@@ -146,7 +146,7 @@ static inline double FastPath(double significand, int exp)
 		return significand / Pow10(-exp);
 }
 
-static inline double StrtodNormalPrecision(double d, int p)
+static inline double StrtodNormalPrecision(double d, int p) noexcept
 {
 	if (p < -308)
 	{
@@ -161,7 +161,7 @@ static inline double StrtodNormalPrecision(double d, int p)
 	return d;
 }
 
-static inline bool StrtodFast(double d, int p, double* result)
+static inline bool StrtodFast(double d, int p, double* result) noexcept
 {
 	// Use fast path for string-to-double conversion if possible
 	// see http://www.exploringbinary.com/fast-path-decimal-to-floating-point-conversion/

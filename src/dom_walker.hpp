@@ -308,7 +308,7 @@ std::basic_string<XCHAR> JSON_Value::GetString() const
 	{
 		ret.resize(this->slen);
 		auto e = JSON_LoadString(const_cast<XCHAR*>(ret.data()), this->str, this->str + this->slen);
-		assert(e - ret.data() <= this->slen);
+		assert(e - ret.data() <= (intptr_t)this->slen);
 		*e = 0;
 		ret.resize(e - ret.data());
 	}
