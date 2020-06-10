@@ -50,12 +50,12 @@ namespace
 		i16x8 = _mm_sub_epi16(i16x8, _mm_set1_epi16('0'));
 
 		//由于范围限制，只能做成低4个数字转成一个数，高4个数字转成一个数
-		__m128i i32x4 = _mm_madd_epi16(i16x8, _mm_set_epi16(1, 10, 100, 1000, 1, 10, 100, 1000));
+		__m128i i32x4 = _mm_madd_epi16(i16x8, _mm_set_epi16(1000, 100, 10, 1, 1000, 100, 10, 1));
 		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
 		//现在，i32x4[0]=i32x4[1]=十进制的高4位数字；i32x4[2]=i32x4[3]=十进制的低4位数字
 		
 		//补上之前十进制的高4位数字少乘的10000
-		i32x4 = _mm_mul_epu32(i32x4, _mm_set_epi32(0, 1, 0, 10000));
+		i32x4 = _mm_mul_epu32(i32x4, _mm_set_epi32(0, 10000, 0, 1));
 		//将十进制的高4位*10000后的结果，加上低4位
 		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(3, 0, 1, 2)));
 
@@ -70,7 +70,7 @@ namespace
 	{
 		//获得8个16位的数字（不再是字母）
 		i16x4 = _mm_sub_epi16(i16x4, _mm_set1_epi16('0'));
-		__m128i i32x4 = x_mm_dotp_i16x4(i16x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
+		__m128i i32x4 = x_mm_dotp_i16x4(i16x4, _mm_set_epi16(0, 0, 0, 0, 1000, 100, 10, 1));
 		int val = _mm_cvtsi128_si32(i32x4);
 		return val;
 	}
@@ -97,11 +97,11 @@ namespace
 
 		static __m128i load_xdigitx4(const type* s) noexcept
 		{
-#if defined(_M_IX86)
+#if defined(_M_X64) || defined(__x86_64__)
+			return _mm_cvtsi64_si128(*(int64_t*)s);
+#elif defined(_M_IX86) || defined(__i386__)
 			const int32_t* v = (const int32_t*)(s);
 			return _mm_set_epi32(0, 0, v[1], v[0]);
-#elif defined (_M_X64)
-			return _mm_cvtsi64_si128(*(int64_t*)s);
 #else
 #error "Unknown platform"
 #endif
@@ -172,11 +172,11 @@ namespace
 		static __m128i load_xdigitx8(const type* s) noexcept
 		{
 			__m128i i8x8;
-#if defined(_M_IX86)
+#if defined(_M_X64) || defined(__x86_64__)
+			i8x8 = _mm_cvtsi64_si128(*(int64_t*)s);
+#elif defined(_M_IX86) || defined(__i386__)
 			const int32_t* v = (const int32_t*)(s);
 			i8x8 = _mm_set_epi32(0, 0, v[1], v[0]);
-#elif defined (_M_X64)
-			i8x8 = _mm_cvtsi64_si128(*(int64_t*)s);
 #else
 #error "Unknown platform"
 #endif
@@ -355,6 +355,27 @@ namespace
 		1e-301,1e-302,1e-303,1e-304,1e-305,1e-306,1e-307,1e-308
 	};
 
+	static const int64_t LONG_E[] =
+	{
+		1,
+		10,
+		100,
+		1000,
+		10000,
+		100000,
+		1000000,
+		10000000,
+		100000000,
+		1000000000,
+		10000000000,
+		100000000000,
+		1000000000000,
+		10000000000000,
+		100000000000000,
+		1000000000000000,
+		10000000000000000,
+	};
+
 	inline double x_fast_path(double significand, intptr_t exp) noexcept
 	{
 		if (exp < -308)
@@ -502,4 +523,5 @@ namespace
 			return { nv, parser_result::Long };
 		}
 	}
+
 }
