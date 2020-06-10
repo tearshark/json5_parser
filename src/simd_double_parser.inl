@@ -224,6 +224,24 @@ namespace
 		int val = x_mm_cvt_i16x4_i32(i16x8);
 		return val;
 	}
+
+	int64_t x_mm_convert_digit8x8_long(uint64_t u8x8, intptr_t exp) noexcept
+	{
+		__m128i i8x8;
+#if defined(_M_X64) || defined(__x86_64__)
+		i8x8 = _mm_cvtsi64_si128(u8x8);
+#elif defined(_M_IX86) || defined(__i386__)
+		i8x8 = _mm_set_epi32(0, 0, u8x8>>32, u8x8);
+#else
+#error "Unknown platform"
+#endif
+		__m128i i16x8 = _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
+		if (exp <= 4)
+			return x_mm_cvt_i16x4_i32(i16x8);
+		else
+			return x_mm_cvt_i16x8_i32(i16x8);
+	}
+
 	//将字符串转化为整数
 	//当遇到非数字字符，或者超过int64_t可表达的范围，则停止
 	//psz:将要转换的字符串
@@ -524,4 +542,256 @@ namespace
 		}
 	}
 
+	//相对于2，不但没快，还慢了！！！
+	template<class _CharType>
+	std::tuple<number_value, parser_result> simd_double_parser3(const _CharType*& pszStart, const _CharType* const pszEnd) noexcept
+	{
+		const _CharType* psz = pszStart;
+
+		//先处理正负号
+		bool minus = *psz == '-';
+		if (minus) ++psz;
+		else if (*psz == '+') ++psz;
+
+		if (psz >= pszEnd)	//意外结束
+			return { number_value{0}, parser_result::Invalid };
+
+		//跳过前面没有意义的0
+		const _CharType* pszDot = nullptr;
+		for (; psz < pszEnd; ++psz)
+		{
+			if (*psz == '0')
+			{
+				continue;
+			}
+			else if (*psz == '.')
+			{
+				if (pszDot == nullptr)
+					pszDot = psz;
+				else
+					return { number_value{0}, parser_result::Invalid };
+				continue;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		int64_t i64 = 0;
+		intptr_t exp = 0;
+
+		uint64_t i16x8 = 0x3030303030303030;
+		const _CharType* pszSaved = psz;
+		for (int i = 0; i < 8 && psz < pszEnd; ++i)
+		{
+			if (*psz == (_CharType)'.')
+			{
+				if (pszDot == nullptr)
+				{
+					--exp;
+					pszDot = psz;
+					++psz;
+					if (psz >= pszEnd)
+						break;
+				}
+				else
+				{
+					return { number_value{0}, parser_result::Invalid };
+				}
+			}
+
+			if (x_is_digit(*psz))
+				i16x8 = (i16x8 << 8) | static_cast<uint8_t>(*psz);
+			else
+				break;
+
+			++psz;
+		}
+		
+		exp += (psz - pszSaved);
+		if (exp > 0)
+			i64 = x_mm_convert_digit8x8_long(i16x8, exp);
+		else
+			i64 = 0;
+
+		if (exp == 8)
+		{
+			int dcount = 0;
+
+			i16x8 = 0x3030303030303030;
+			pszSaved = psz;
+			for (int i = 0; i < 8 && psz < pszEnd; ++i)
+			{
+				if (*psz == (_CharType)'.')
+				{
+					if (pszDot == nullptr)
+					{
+						--dcount;
+						pszDot = psz;
+						++psz;
+						if (psz >= pszEnd)
+							break;
+					}
+					else
+					{
+						return { number_value{0}, parser_result::Invalid };
+					}
+				}
+
+				if (x_is_digit(*psz))
+					i16x8 = (i16x8 << 8) | static_cast<uint8_t>(*psz);
+				else
+					break;
+
+				++psz;
+			}
+
+			dcount += (psz - pszSaved);
+			if (dcount > 0)
+			{
+				exp += dcount;
+				i64 = i64 * LONG_E[dcount] + x_mm_convert_digit8x8_long(i16x8, dcount);
+			}
+		}
+
+		bool useDouble = false;
+		if (exp == 16)
+		{
+			for (; psz < pszEnd && x_is_digit(*psz); ++psz)
+			{
+				if (i64 >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
+				{
+					if (i64 != 0x0CCCCCCCCCCCCCCCULL || *psz >= (_CharType)'8')
+					{
+						useDouble = true;
+						break;
+					}
+				}
+
+				int val = *psz - (_CharType)'0';
+				i64 = i64 * 10 + val;
+			}
+		}
+
+		double dval = 0.0;
+		if (useDouble)
+		{
+			dval = (double)i64;
+
+			if (pszDot == nullptr)
+			{
+				pszSaved = psz;
+				for (; psz < pszEnd && x_is_digit(*psz); ++psz);
+				exp = psz - pszSaved;
+
+				if (*psz == '.')
+				{
+					pszDot = psz;
+					++psz;
+				}
+			}
+			else
+			{
+				exp = pszDot - psz + 1;
+			}
+
+			for (; psz < pszEnd && x_is_digit(*psz); ++psz);
+		}
+		else
+		{
+			if (pszDot != nullptr)
+			{
+				dval = (double)i64;
+				useDouble = true;
+
+				exp = pszDot - psz + 1;
+			}
+			else
+			{
+				exp = 0;
+			}
+		}
+
+		if (psz < pszEnd && (*psz | 32) == 'e')
+		{//解析指数
+			if (!useDouble)
+			{//如果之前是整数，则接下来要按照浮点数进行解析了
+				dval = (double)i64;
+				useDouble = true;
+			}
+			++psz;
+
+			bool expMinus = *psz == '-';
+			if (expMinus) ++psz;
+			else if (*psz == '+') ++psz;
+			if (psz >= pszEnd)
+				return { number_value{0}, parser_result::Invalid };
+
+			//跳过无意义的0
+			for (; psz < pszEnd && *psz == '0'; ++psz);
+
+			i16x8 = 0x3030303030303030;
+			const _CharType* pszSaved = psz;
+			for (int i = 0; i < 8 && psz < pszEnd; ++i)
+			{
+				if (x_is_digit(*psz))
+					i16x8 = (i16x8 << 8) | static_cast<uint8_t>(*psz);
+				else
+					break;
+				++psz;
+			}
+			int dcount = (psz - pszSaved);
+
+			intptr_t e2 = x_mm_convert_digit8x8_long(i16x8, dcount);
+			if (e2 > (std::numeric_limits<int16_t>::max)())
+				return { number_value{0}, parser_result::Invalid };
+
+			//将指数累积上去
+			if (expMinus)
+				exp -= (intptr_t)e2;
+			else
+				exp += (intptr_t)e2;
+		}
+
+		if (useDouble)
+		{
+			if (exp < -330)	//330 = 308 + 22
+			{
+				dval = -INFINITY;
+			}
+			else if (exp < -308)
+			{
+				dval = x_fast_path(dval, -308);
+				dval = x_fast_path(dval, exp + 308);
+			}
+			else if (exp > 330)	//330 = 308 + 22
+			{
+				dval = INFINITY;
+			}
+			else if (exp > 308)
+			{
+				dval = x_fast_path(dval, 308);
+				dval = x_fast_path(dval, exp - 308);
+			}
+			else if (exp != 0)
+			{
+				dval = x_fast_path(dval, exp);
+			}
+
+			number_value nv;
+			nv.d = minus ? -dval : dval;
+
+			pszStart = psz;
+			return { nv, parser_result::Double };
+		}
+		else
+		{
+			number_value nv;
+			nv.l = minus ? -i64 : i64;
+
+			pszStart = psz;
+			return { nv, parser_result::Long };
+		}
+	}
 }

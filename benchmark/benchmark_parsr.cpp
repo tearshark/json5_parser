@@ -8,7 +8,7 @@
 
 namespace json = json5::singlebyte;
 
-const int N = 200;
+const int N = 800;
 
 std::tuple<char*, size_t> load_from_file(const char* path)
 {
