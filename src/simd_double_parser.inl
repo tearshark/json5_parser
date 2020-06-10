@@ -399,7 +399,7 @@ namespace
 	inline double x_fast_path(double significand, intptr_t exp) noexcept
 	{
 		if (exp < -308)
-			return -INFINITY;
+			return 0.0;
 		else if (exp >= 0)
 			return significand * DOUBLE_E[exp];
 		else
@@ -507,7 +507,7 @@ namespace
 		{
 			if (exp < -330)	//330 = 308 + 22
 			{
-				dval = -INFINITY;
+				dval = 0.0;
 			}
 			else if (exp < -308)
 			{
@@ -760,7 +760,7 @@ namespace
 		{
 			if (exp < -330)	//330 = 308 + 22
 			{
-				dval = -INFINITY;
+				dval = 0.0;
 			}
 			else if (exp < -308)
 			{
