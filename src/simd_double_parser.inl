@@ -211,7 +211,7 @@ namespace
 	//overflow:输出参数，如果溢出则填为true；否则，不会改变overflow的值
 	//返回值:已经转换的整数
 	template<class type>
-	int64_t x_mm_convert_charx4_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
+	int64_t x_mm_convert_string_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
 	{
 		using traits_t = x_convert_char_selector<sizeof(type)>;
 
@@ -365,7 +365,7 @@ namespace
 
 		double dval = 0.0f;
 		bool useDouble = false;	//初始没溢出，如果整数溢出了，则需要使用浮点数算法
-		int64_t i64 = x_mm_convert_charx4_long(0, psz, pszEnd, useDouble);
+		int64_t i64 = x_mm_convert_string_long(0, psz, pszEnd, useDouble);
 		if (useDouble)
 		{//精度溢出，使用浮点数算法
 			dval = (double)i64;
@@ -382,7 +382,7 @@ namespace
 
 			if (!useDouble)
 			{//还未溢出，解析小数点后面的整数
-				i64 = x_mm_convert_charx4_long(i64, psz, pszEnd, useDouble);
+				i64 = x_mm_convert_string_long(i64, psz, pszEnd, useDouble);
 			}
 			dval = (double)i64;
 
@@ -427,7 +427,7 @@ namespace
 			}
 
 			bool overflow = false;	//初始没溢出，如果整数溢出了，则认为这是一个无效的数
-			int64_t e2 = x_mm_convert_charx4_long(0, psz, pszEnd, overflow);
+			int64_t e2 = x_mm_convert_string_long(0, psz, pszEnd, overflow);
 
 			if (overflow || e2 > ((std::numeric_limits<int32_t>::max)() / 2))
 			{
