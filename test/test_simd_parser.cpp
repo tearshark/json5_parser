@@ -3,6 +3,9 @@
 
 int main(int argc, char* argv[])
 {
+	const char32_t* s8 = U"12345678";
+	int64_t val = simd_double_parser::x_mm_convert_digitx8_long(0, s8);
+
 	const char* psz[] =
 	{
 		"12345678998765432101.23E50",	//??

@@ -1,8 +1,7 @@
 
 namespace
 {
-	/*
-	#define _MM_SHUFFLE8(fp7, fp6, fp5, fp4, fp3, fp2, fp1, fp0)\
+	#define _MM_SHUFFLE8(fp7, fp6, fp5, fp4, fp3, fp2, fp1, fp0) \
 		(((fp7) << 21) | ((fp6) << 18) | ((fp5) << 15) | ((fp4) << 12)) | \
 		(((fp3) << 9) | ((fp2) << 6) | ((fp1) << 3) | ((fp0)))
 
@@ -22,16 +21,58 @@ namespace
 		__m128i vMask = _mm_set_epi8(m14, m15, m12, m13, m10, m11, m08, m09, m06, m07, m04, m05, m02, m03, m00, m01);
 		return _mm_shuffle_epi8(_A, vMask);
 	}
-	*/
+
+	//a和b都是4个16位的整数(忽略高64位)
+	//r[0..7] = a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]
+	inline __m128i x_mm_dotp_i16x4(__m128i i16x8_a, __m128i i16x8_b) noexcept
+	{
+		__m128i i32x4 = _mm_madd_epi16(i16x8_a, i16x8_b);
+		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
+		return i32x4;
+	}
 
 	//a和b都是8个16位的整数
 	//r[0..7] = a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]+a[4]*b[4]+a[5]*b[5]+a[6]*b[6]+a[7]*b[7]
-	inline __m128i x_mm_dotp_i16x4(__m128i a, __m128i b) noexcept
+	inline __m128i x_mm_dotp_i16x8(__m128i i16x8_a, __m128i i16x8_b) noexcept
 	{
-		__m128i value = _mm_mullo_epi16(a, b);
-		value = _mm_add_epi16(value, _mm_shufflelo_epi16(value, _MM_SHUFFLE(0, 1, 2, 3)));
-		value = _mm_add_epi16(value, _mm_shufflelo_epi16(value, _MM_SHUFFLE(1, 0, 3, 2)));
-		return value;
+		__m128i i32x4 = _mm_madd_epi16(i16x8_a, i16x8_b);
+		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
+		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(0, 1, 2, 3)));
+		return i32x4;
+	}
+
+	//将8个16位字母，转化成一个最大99999999的整数
+	//r = ((i16x8[0]-'0')*1 + (i16x8[1]-'0')*10 + (i16x8[2]-'0')*100 + (i16x8[3]-'0')*1000)+
+	//    ((i16x8[4]-'0')*1 + (i16x8[5]-'0')*10 + (i16x8[6]-'0')*100 + (i16x8[7]-'0')*1000)*1000
+	static int x_mm_cvt_i16x8_i32(__m128i i16x8) noexcept
+	{
+		//获得8个16位的数字（不再是字母）
+		i16x8 = _mm_sub_epi16(i16x8, _mm_set1_epi16('0'));
+
+		//由于范围限制，只能做成低4个数字转成一个数，高4个数字转成一个数
+		__m128i i32x4 = _mm_madd_epi16(i16x8, _mm_set_epi16(1, 10, 100, 1000, 1, 10, 100, 1000));
+		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
+		//现在，i32x4[0]=i32x4[1]=十进制的高4位数字；i32x4[2]=i32x4[3]=十进制的低4位数字
+		
+		//补上之前十进制的高4位数字少乘的10000
+		i32x4 = _mm_mul_epu32(i32x4, _mm_set_epi32(0, 1, 0, 10000));
+		//将十进制的高4位*10000后的结果，加上低4位
+		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(3, 0, 1, 2)));
+
+		//结果在低64位里存访。由于范围没超过32位，故直接取低32位就是结果
+		int val = _mm_cvtsi128_si32(i32x4);
+		return val;
+	}
+
+	//将4个16位字母，转化成一个最大9999的整数
+	//r = ((i16x8[0]-'0')*1 + (i16x8[1]-'0')*10 + (i16x8[2]-'0')*100 + (i16x8[3]-'0')*1000)
+	static int x_mm_cvt_i16x4_i32(__m128i i16x4) noexcept
+	{
+		//获得8个16位的数字（不再是字母）
+		i16x4 = _mm_sub_epi16(i16x4, _mm_set1_epi16('0'));
+		__m128i i32x4 = x_mm_dotp_i16x4(i16x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
+		int val = _mm_cvtsi128_si32(i32x4);
+		return val;
 	}
 
 	//判断x是不是一个数字字母([0,9]之间的字母)
@@ -54,7 +95,7 @@ namespace
 	{
 		using type = char16_t;
 
-		static __m128i load_xcharx4(const type* s) noexcept
+		static __m128i load_xdigitx4(const type* s) noexcept
 		{
 #if defined(_M_IX86)
 			const int32_t* v = (const int32_t*)(s);
@@ -64,6 +105,13 @@ namespace
 #else
 #error "Unknown platform"
 #endif
+		}
+
+		//加载8个数字字母
+		//返回i16x8的128位值
+		static __m128i load_xdigitx8(const type* s) noexcept
+		{
+			return _mm_load_si128((const __m128i*)s);
 		}
 
 		//i16x4是8个16位字母
@@ -92,11 +140,10 @@ namespace
 		//r = (i16x4[0]-'0')*i16x4_mul[0] + (i16x4[1]-'0')*i16x4_mul[1] + (i16x4[2]-'0')*i16x4_mul[2] + (i16x4[3]-'0')*i16x4_mul[3]
 		static int cvt_xcharx4_i32(__m128i i16x4, __m128i i16x4_mul) noexcept
 		{
-			i16x4 = _mm_sub_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '0', '0', '0', '0'));
+			i16x4 = _mm_sub_epi16(i16x4, _mm_set1_epi16('0'));
 
-			__m128i i16x4_dp = x_mm_dotp_i16x4(i16x4, i16x4_mul);
-			int val = _mm_cvtsi128_si32(i16x4_dp) & 0xffff;
-
+			__m128i i32x4 = x_mm_dotp_i16x4(i16x4, i16x4_mul);
+			int val = _mm_cvtsi128_si32(i32x4) & 0xffff;
 			return val;
 		}
 
@@ -114,47 +161,27 @@ namespace
 	{
 		using type = char;
 
-		static __m128i load_xcharx4(const type* s) noexcept
+		static __m128i load_xdigitx4(const type* s) noexcept
 		{
-			return _mm_cvtsi32_si128(*(int*)s);
+			__m128i i8x8 = _mm_cvtsi32_si128(*(int*)s);
+			return _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
 		}
 
-		//i8x4是16个8位字母
-		//获得 i8x4[0], i8x4[1], i8x4[2], i8x4[3] 四个数是不是都是['0', '9']之间的数字字母
-		//忽略i8x4[4...15]
-		//r.bits[0] = is_digit(i8x4[0])
-		//r.bits[1] = is_digit(i8x4[1])
-		//r.bits[2] = is_digit(i8x4[2])
-		//r.bits[3] = is_digit(i8x4[3])
-		static int digit_mask(__m128i i8x4) noexcept
+		//加载8个数字字母
+		//返回i16x8的128位值
+		static __m128i load_xdigitx8(const type* s) noexcept
 		{
-			__m128i i8x16_gt = _mm_cmpgt_epi8(i8x4, _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '0' - 1, '0' - 1, '0' - 1, '0' - 1));
-			__m128i i8x16_lt = _mm_cmplt_epi8(i8x4, _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '9' + 1, '9' + 1, '9' + 1, '9' + 1));
-			__m128i i8x16_and = _mm_and_si128(i8x16_gt, i8x16_lt);
-			int i8x4_mask = _mm_movemask_epi8(i8x16_and);
-			return i8x4_mask;
+			__m128i i8x8;
+#if defined(_M_IX86)
+			const int32_t* v = (const int32_t*)(s);
+			i8x8 = _mm_set_epi32(0, 0, v[1], v[0]);
+#elif defined (_M_X64)
+			i8x8 = _mm_cvtsi64_si128(*(int64_t*)s);
+#else
+#error "Unknown platform"
+#endif
+			return _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
 		}
-
-		//将4个8位字母(忽略高12个8位字母），转化成一个最大9999的整数
-		//i16x4_mul是4个16位整数(高4个16位数字必须设定为0)，根据需要设定的转化多少个字母:
-		//	4字母 : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
-		//	3字母 : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
-		//	2字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
-		//	1字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
-		//r = (i8x4[0]-'0')*i16x4_mul[0] + (i8x4[1]-'0')*i16x4_mul[1] + (i8x4[2]-'0')*i16x4_mul[2] + (i8x4[3]-'0')*i16x4_mul[3]
-		static int cvt_xcharx4_i32(__m128i i8x4, __m128i i16x4_mul) noexcept
-		{
-			__m128i i16x4 = _mm_unpacklo_epi8(i8x4, _mm_setzero_si128());
-			return x_convert_char_selector<2>::cvt_xcharx4_i32(i16x4, i16x4_mul);
-		}
-
-		enum
-		{
-			MASK4 = 0xf,
-			MASK3 = 0x7,
-			MASK2 = 0x3,
-			MASK1 = 0x1,
-		};
 	};
 
 	template<>
@@ -162,49 +189,41 @@ namespace
 	{
 		using type = char32_t;
 
-		static __m128i load_xcharx4(const type* s) noexcept
+		static __m128i load_xdigitx4(const type* s) noexcept
 		{
-			return _mm_loadu_si128((__m128i*)s);
+			__m128i lo = _mm_load_si128((__m128i*)s);
+			return _mm_packs_epi32(lo, _mm_setzero_si128());
 		}
 
-		//i32x4是4个32位字母
-		//获得 i32x4[0], i32x4[1], i32x4[2], i32x4[3] 四个数是不是都是['0', '9']之间的数字字母
-		//用于处理unicode 32bits
-		//r.bits[0 ...3 ] = is_digit(i32x4[0])
-		//r.bits[4 ...7 ] = is_digit(i32x4[1])
-		//r.bits[8 ...11] = is_digit(i32x4[2])
-		//r.bits[12...15] = is_digit(i32x4[3])
-		static int digit_mask(__m128i i32x4) noexcept
+		static __m128i load_xdigitx8(const type* s) noexcept
 		{
-			__m128i i32x4_gt = _mm_cmpgt_epi32(i32x4, _mm_set_epi32('0' - 1, '0' - 1, '0' - 1, '0' - 1));
-			__m128i i32x4_lt = _mm_cmplt_epi32(i32x4, _mm_set_epi32('9' + 1, '9' + 1, '9' + 1, '9' + 1));
-			__m128i i32x4_and = _mm_and_si128(i32x4_gt, i32x4_lt);
-			int i32x4_mask = _mm_movemask_epi8(i32x4_and);
-			return i32x4_mask;
+			__m128i lo = _mm_load_si128((__m128i*)s);
+			__m128i hi = _mm_load_si128(((__m128i*)s) + 1);
+			return _mm_packs_epi32(lo, hi);
 		}
-
-		//将4个32位字母，转化成一个最大9999的整数
-		//i16x4_mul是4个16位整数(高4个16位数字必须设定为0)，根据需要设定的转化多少个字母:
-		//	4字母 : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
-		//	3字母 : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
-		//	2字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
-		//	1字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
-		//r = (i32x4[0]-'0')*i16x4_mul[0] + (i32x4[1]-'0')*i16x4_mul[1] + (i32x4[2]-'0')*i16x4_mul[2] + (i32x4[3]-'0')*i16x4_mul[3]
-		static int cvt_xcharx4_i32(__m128i i32x4, __m128i i16x4_mul) noexcept
-		{
-			__m128i i16x4 = _mm_packs_epi32(i32x4, _mm_setzero_si128());
-			return x_convert_char_selector<2>::cvt_xcharx4_i32(i16x4, i16x4_mul);
-		}
-
-		enum
-		{
-			MASK4 = 0xffff,
-			MASK3 = 0x0fff,
-			MASK2 = 0x00ff,
-			MASK1 = 0x000f,
-		};
 	};
 
+	//将8个数字字符转化位整数。如"12345678"转成整数12345678。
+	template<class type>
+	int64_t x_mm_convert_digitx8_long(int64_t result, const type* s) noexcept
+	{
+		using traits_t = x_convert_char_selector<sizeof(type)>;
+	
+		__m128i i16x8 = traits_t::load_xdigitx8((typename traits_t::type*)s);
+		int val = x_mm_cvt_i16x8_i32(i16x8);
+		return val;
+	}
+
+	//将4个数字字符转化位整数。如"1234"转成整数1234。
+	template<class type>
+	int64_t x_mm_convert_digitx4_long(int64_t result, const type* s) noexcept
+	{
+		using traits_t = x_convert_char_selector<sizeof(type)>;
+
+		__m128i i16x8 = traits_t::load_xdigitx4((typename traits_t::type*)s);
+		int val = x_mm_cvt_i16x4_i32(i16x8);
+		return val;
+	}
 	//将字符串转化为整数
 	//当遇到非数字字符，或者超过int64_t可表达的范围，则停止
 	//psz:将要转换的字符串
@@ -214,6 +233,7 @@ namespace
 	int64_t x_mm_convert_string_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
 	{
 		using traits_t = x_convert_char_selector<sizeof(type)>;
+		using traits16_t = x_convert_char_selector<2>;
 
 		constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
 		constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
@@ -226,38 +246,38 @@ namespace
 		{
 			auto remaind = e - s;
 
-			__m128i i8x4 = traits_t::load_xcharx4(s);
-			int mask = traits_t::digit_mask(i8x4);
-			if (mask == traits_t::MASK4 && remaind >= 4)
+			__m128i i16x4 = traits_t::load_xdigitx4(s);
+			int mask = traits16_t::digit_mask(i16x4);
+			if (mask == traits16_t::MASK4 && remaind >= 4)
 			{
 				if (result > LIMIT_LONG_9999) break;
 
-				int val = traits_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
+				int val = traits16_t::cvt_xcharx4_i32(i16x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
 				result = result * 10000 + val;
 				s += 4;
 			}
-			else if ((mask & traits_t::MASK3) == traits_t::MASK3 && remaind >= 3)
+			else if ((mask & traits16_t::MASK3) == traits16_t::MASK3 && remaind >= 3)
 			{
 				if (result > LIMIT_LONG_999) break;
 
-				int val = traits_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100));
+				int val = traits16_t::cvt_xcharx4_i32(i16x4, _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100));
 				result = result * 1000 + val;
 
 				psz = s + 3;
 				return result;
 			}
-			else if ((mask & traits_t::MASK2) == traits_t::MASK2 && remaind >= 2)
+			else if ((mask & traits16_t::MASK2) == traits16_t::MASK2 && remaind >= 2)
 			{
 				if (result > LIMIT_LONG_99) break;
 
-				//int val = traits_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
+				//int val = traits16_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
 				int val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
 				result = result * 100 + val;
 
 				psz = s + 2;
 				return result;
 			}
-			else if ((mask & traits_t::MASK1) == traits_t::MASK1)
+			else if ((mask & traits16_t::MASK1) == traits16_t::MASK1)
 			{
 				if (result > LIMIT_LONG_9) break;
 
