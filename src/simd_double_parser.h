@@ -3,7 +3,6 @@
 #include <tuple>
 
 #include <emmintrin.h>		//SSE2
-#include <smmintrin.h>		//SSE4
 
 namespace simd_double_parser
 {

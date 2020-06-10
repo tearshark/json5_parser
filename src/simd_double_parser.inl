@@ -1,6 +1,7 @@
 
 namespace
 {
+/*
 	#define _MM_SHUFFLE8(fp7, fp6, fp5, fp4, fp3, fp2, fp1, fp0) \
 		(((fp7) << 21) | ((fp6) << 18) | ((fp5) << 15) | ((fp4) << 12)) | \
 		(((fp3) << 9) | ((fp2) << 6) | ((fp1) << 3) | ((fp0)))
@@ -21,6 +22,7 @@ namespace
 		__m128i vMask = _mm_set_epi8(m14, m15, m12, m13, m10, m11, m08, m09, m06, m07, m04, m05, m02, m03, m00, m01);
 		return _mm_shuffle_epi8(_A, vMask);
 	}
+*/
 
 	//a和b都是4个16位的整数(忽略高64位)
 	//r[0..7] = a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]
