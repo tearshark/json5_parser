@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "../src/simd_double_parser.h"
 
@@ -136,7 +137,7 @@ int main(int argc, char* argv[])
 		}
 		else if (isDouble == simd_double_parser::parser_result::Long)
 		{
-			printf("'%s' is long, value=%lld\r\n", s, nv.l);
+			printf("'%s' is long, value=%" PRId64 "\r\n", s, nv.l);
 		}
 		else
 		{
