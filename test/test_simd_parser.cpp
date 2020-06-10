@@ -1,3 +1,5 @@
+#include <cstdint>
+#include "../src/simd_double_parser.h"
 
 int main(int argc, char* argv[])
 {
@@ -97,18 +99,19 @@ int main(int argc, char* argv[])
 
 	for (const char* s : psz)
 	{
-		std::tie(nv, isDouble) = simd_double_parser::parser(s, s + strlen(s));
+		const char* t = s;
+		std::tie(nv, isDouble) = simd_double_parser::parser(t, s + strlen(s));
 		if (isDouble == simd_double_parser::parser_result::Double)
 		{
 			printf("'%s' is double, value=%.16lE\r\n", s, nv.d);
 
 			double d2 = std::strtold(s, nullptr);
-			wchar_t buff1[64];
-			wchar_t buff2[64];
-			swprintf_s(buff1, _countof(buff1), L"%.16lE", nv.d);
-			swprintf_s(buff2, _countof(buff2), L"%.16lE", d2);
+			char buff1[64];
+			char buff2[64];
+			sprintf_s(buff1, _countof(buff1), "%.16lE", nv.d);
+			sprintf_s(buff2, _countof(buff2), "%.16lE", d2);
 			if (memcmp(buff1, buff2, 17) != 0)
-				wprintf(L"Huge difference. 'strtold' is %s.\r\n", buff2);
+				printf("Huge difference. 'strtold' is %s.\r\n", buff2);
 		}
 		else if (isDouble == simd_double_parser::parser_result::Long)
 		{

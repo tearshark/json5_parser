@@ -34,49 +34,6 @@ namespace
 		return value;
 	}
 
-	//将4个16位字母(忽略高4个16位字母），转化成一个最大9999的整数
-	//i16x4_mul是4个16位整数(高4个16位数字必须设定为0)，根据需要设定的转化多少个字母:
-	//	4字母 : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
-	//	3字母 : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
-	//	2字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
-	//	1字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
-	//r = (i16x4[0]-'0')*i16x4_mul[0] + (i16x4[1]-'0')*i16x4_mul[1] + (i16x4[2]-'0')*i16x4_mul[2] + (i16x4[3]-'0')*i16x4_mul[3]
-	inline int x_mm_cvt_i16x4_i32(__m128i i16x4, __m128i i16x4_mul) noexcept
-	{
-		i16x4 = _mm_sub_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '0', '0', '0', '0'));
-
-		__m128i i16x4_dp = x_mm_dotp_i16x4(i16x4, i16x4_mul);
-		int val = _mm_cvtsi128_si32(i16x4_dp) & 0xffff;
-
-		return val;
-	}
-
-	//将4个8位字母(忽略高12个8位字母），转化成一个最大9999的整数
-	//i16x4_mul是4个16位整数(高4个16位数字必须设定为0)，根据需要设定的转化多少个字母:
-	//	4字母 : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
-	//	3字母 : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
-	//	2字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
-	//	1字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
-	//r = (i8x4[0]-'0')*i16x4_mul[0] + (i8x4[1]-'0')*i16x4_mul[1] + (i8x4[2]-'0')*i16x4_mul[2] + (i8x4[3]-'0')*i16x4_mul[3]
-	inline int x_mm_cvt_i8x4_i32(__m128i i8x4, __m128i i16x4_mul) noexcept
-	{
-		__m128i i16x4 = _mm_unpacklo_epi8(i8x4, _mm_setzero_si128());
-		return x_mm_cvt_i16x4_i32(i16x4, i16x4_mul);
-	}
-
-	//将4个32位字母，转化成一个最大9999的整数
-	//i16x4_mul是4个16位整数(高4个16位数字必须设定为0)，根据需要设定的转化多少个字母:
-	//	4字母 : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
-	//	3字母 : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
-	//	2字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
-	//	1字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
-	//r = (i32x4[0]-'0')*i16x4_mul[0] + (i32x4[1]-'0')*i16x4_mul[1] + (i32x4[2]-'0')*i16x4_mul[2] + (i32x4[3]-'0')*i16x4_mul[3]
-	inline int x_mm_cvt_i32x4_i32(__m128i i32x4, __m128i i16x4_mul) noexcept
-	{
-		__m128i i16x4 = _mm_packs_epi32(i32x4, _mm_setzero_si128());
-		return x_mm_cvt_i16x4_i32(i16x4, i16x4_mul);
-	}
-
 	//判断x是不是一个数字字母([0,9]之间的字母)
 #ifndef x_is_digit
 	inline bool x_is_digit(int32_t x) noexcept
@@ -91,118 +48,6 @@ namespace
 	//故不能简单的针对char/wchar_t进行特化
 	template<size_t _CharSize>
 	struct x_convert_char_selector;
-
-	template<>
-	struct x_convert_char_selector<1>
-	{
-		using type = char;
-
-		static __m128i load_xcharx4(const type* s) noexcept
-		{
-			return _mm_cvtsi32_si128(*(int*)s);
-		}
-
-		//i8x4是16个8位字母
-		//获得 i8x4[0], i8x4[1], i8x4[2], i8x4[3] 四个数是不是都是['0', '9']之间的数字字母
-		//忽略i8x4[4...15]
-		//r.bits[0] = is_digit(i8x4[0])
-		//r.bits[1] = is_digit(i8x4[1])
-		//r.bits[2] = is_digit(i8x4[2])
-		//r.bits[3] = is_digit(i8x4[3])
-		static int digit_mask(__m128i i8x4) noexcept
-		{
-			__m128i i8x16_gt = _mm_cmpgt_epi8(i8x4, _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '0' - 1, '0' - 1, '0' - 1, '0' - 1));
-			__m128i i8x16_lt = _mm_cmplt_epi8(i8x4, _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '9' + 1, '9' + 1, '9' + 1, '9' + 1));
-			__m128i i8x16_and = _mm_and_si128(i8x16_gt, i8x16_lt);
-			int i8x4_mask = _mm_movemask_epi8(i8x16_and);
-			return i8x4_mask;
-		}
-
-		//将字符串转化为整数
-		//当遇到非数字字符，或者超过int64_t可表达的范围，则停止
-		//psz:将要转换的字符串
-		//overflow:输出参数，如果溢出则填为true；否则，不会改变overflow的值
-		//返回值:已经转换的整数
-		static int64_t convert_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
-		{
-			constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
-			constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
-			constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
-			constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
-			constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
-
-			const type* s = psz;
-			for (; s < e; )
-			{
-				auto remaind = e - s;
-
-				__m128i i8x4 = load_xcharx4(s);
-				int mask = digit_mask(i8x4);
-				if (mask == 0xf && remaind >= 4)
-				{
-					if (result > LIMIT_LONG_9999) break;
-
-					int val = x_mm_cvt_i8x4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
-					result = result * 10000 + val;
-					s += 4;
-				}
-				else if ((mask & 0x7) == 0x7 && remaind >= 3)
-				{
-					if (result > LIMIT_LONG_999) break;
-
-					int val = x_mm_cvt_i8x4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100));
-					result = result * 1000 + val;
-
-					psz = s + 3;
-					return result;
-				}
-				else if ((mask & 0x3) == 0x3 && remaind >= 2)
-				{
-					if (result > LIMIT_LONG_99) break;
-
-					//int val = x_mm_cvt_i8x4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
-					int val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
-					result = result * 100 + val;
-
-					psz = s + 2;
-					return result;
-				}
-				else if ((mask & 0x1) == 0x1)
-				{
-					if (result > LIMIT_LONG_9) break;
-
-					int val = *s - (type)'0';
-					result = result * 10 + val;
-
-					psz = s + 1;
-					return result;
-				}
-				else
-				{
-					psz = s;
-					return result;
-				}
-			}
-
-			for (; s < e && x_is_digit(*s); ++s)
-			{
-				if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
-				{
-					if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= (type)'8')
-					{
-						overflow = true;
-						break;
-					}
-				}
-
-				int val = *s - (type)'0';
-				result = result * 10 + val;
-			}
-
-			psz = s;
-			return result;
-		}
-	};
 
 	template<>
 	struct x_convert_char_selector<2>
@@ -238,90 +83,78 @@ namespace
 			return i8x4_mask;
 		}
 
-		//将字符串转化为整数
-		//当遇到非数字字符，或者超过int64_t可表达的范围，则停止
-		//psz:将要转换的字符串
-		//overflow:输出参数，如果溢出则填为true；否则，不会改变overflow的值
-		//返回值:已经转换的整数
-		static int64_t convert_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
+		//将4个16位字母(忽略高4个16位字母），转化成一个最大9999的整数
+		//i16x4_mul是4个16位整数(高4个16位数字必须设定为0)，根据需要设定的转化多少个字母:
+		//	4字母 : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
+		//	3字母 : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
+		//	2字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
+		//	1字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
+		//r = (i16x4[0]-'0')*i16x4_mul[0] + (i16x4[1]-'0')*i16x4_mul[1] + (i16x4[2]-'0')*i16x4_mul[2] + (i16x4[3]-'0')*i16x4_mul[3]
+		static int cvt_xcharx4_i32(__m128i i16x4, __m128i i16x4_mul) noexcept
 		{
-			constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
-			constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
-			constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
-			constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
-			constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
+			i16x4 = _mm_sub_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '0', '0', '0', '0'));
 
-			const type* s = psz;
-			for (; s < e; )
-			{
-				auto remaind = e - s;
+			__m128i i16x4_dp = x_mm_dotp_i16x4(i16x4, i16x4_mul);
+			int val = _mm_cvtsi128_si32(i16x4_dp) & 0xffff;
 
-				__m128i i16x4 = load_xcharx4(s);
-				int mask = digit_mask(i16x4);
-				if (mask == 0xff && remaind >= 4)
-				{
-					if (result > LIMIT_LONG_9999) break;
-
-					int val = x_mm_cvt_i16x4_i32(i16x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
-					result = result * 10000 + val;
-					s += 4;
-				}
-				else if ((mask & 0x3f) == 0x3f && remaind >= 3)
-				{
-					if (result > LIMIT_LONG_999) break;
-
-					int val = x_mm_cvt_i16x4_i32(i16x4, _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100));
-					result = result * 1000 + val;
-
-					psz = s + 3;
-					return result;
-				}
-				else if ((mask & 0x0f) == 0x0f && remaind >= 2)
-				{
-					if (result > LIMIT_LONG_99) break;
-
-					//int val = x_mm_cvt_i8x4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
-					int val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
-					result = result * 100 + val;
-
-					psz = s + 2;
-					return result;
-				}
-				else if ((mask & 0x03) == 0x03)
-				{
-					if (result > LIMIT_LONG_9) break;
-
-					int val = *s - (type)'0';
-					result = result * 10 + val;
-
-					psz = s + 1;
-					return result;
-				}
-				else
-				{
-					psz = s;
-					return result;
-				}
-			}
-
-			for (; s < e && x_is_digit(*s); ++s)
-			{
-				if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
-				{
-					if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= '8')
-					{
-						overflow = true;
-						break;
-					}
-				}
-
-				int val = *s - (type)'0';
-				result = result * 10 + val;
-			}
-
-			psz = s;
-			return result;
+			return val;
 		}
+
+		enum
+		{
+			MASK4 = 0xff,
+			MASK3 = 0x3f,
+			MASK2 = 0x0f,
+			MASK1 = 0x03,
+		};
+	};
+
+	template<>
+	struct x_convert_char_selector<1>
+	{
+		using type = char;
+
+		static __m128i load_xcharx4(const type* s) noexcept
+		{
+			return _mm_cvtsi32_si128(*(int*)s);
+		}
+
+		//i8x4是16个8位字母
+		//获得 i8x4[0], i8x4[1], i8x4[2], i8x4[3] 四个数是不是都是['0', '9']之间的数字字母
+		//忽略i8x4[4...15]
+		//r.bits[0] = is_digit(i8x4[0])
+		//r.bits[1] = is_digit(i8x4[1])
+		//r.bits[2] = is_digit(i8x4[2])
+		//r.bits[3] = is_digit(i8x4[3])
+		static int digit_mask(__m128i i8x4) noexcept
+		{
+			__m128i i8x16_gt = _mm_cmpgt_epi8(i8x4, _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '0' - 1, '0' - 1, '0' - 1, '0' - 1));
+			__m128i i8x16_lt = _mm_cmplt_epi8(i8x4, _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '9' + 1, '9' + 1, '9' + 1, '9' + 1));
+			__m128i i8x16_and = _mm_and_si128(i8x16_gt, i8x16_lt);
+			int i8x4_mask = _mm_movemask_epi8(i8x16_and);
+			return i8x4_mask;
+		}
+
+		//将4个8位字母(忽略高12个8位字母），转化成一个最大9999的整数
+		//i16x4_mul是4个16位整数(高4个16位数字必须设定为0)，根据需要设定的转化多少个字母:
+		//	4字母 : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
+		//	3字母 : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
+		//	2字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
+		//	1字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
+		//r = (i8x4[0]-'0')*i16x4_mul[0] + (i8x4[1]-'0')*i16x4_mul[1] + (i8x4[2]-'0')*i16x4_mul[2] + (i8x4[3]-'0')*i16x4_mul[3]
+		static int cvt_xcharx4_i32(__m128i i8x4, __m128i i16x4_mul) noexcept
+		{
+			__m128i i16x4 = _mm_unpacklo_epi8(i8x4, _mm_setzero_si128());
+			return x_convert_char_selector<2>::cvt_xcharx4_i32(i16x4, i16x4_mul);
+		}
+
+		enum
+		{
+			MASK4 = 0xf,
+			MASK3 = 0x7,
+			MASK2 = 0x3,
+			MASK1 = 0x1,
+		};
 	};
 
 	template<>
@@ -350,91 +183,115 @@ namespace
 			return i32x4_mask;
 		}
 
-		//将字符串转化为整数
-		//当遇到非数字字符，或者超过int64_t可表达的范围，则停止
-		//psz:将要转换的字符串
-		//overflow:输出参数，如果溢出则填为true；否则，不会改变overflow的值
-		//返回值:已经转换的整数
-		static int64_t convert_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
+		//将4个32位字母，转化成一个最大9999的整数
+		//i16x4_mul是4个16位整数(高4个16位数字必须设定为0)，根据需要设定的转化多少个字母:
+		//	4字母 : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
+		//	3字母 : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
+		//	2字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
+		//	1字母 : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
+		//r = (i32x4[0]-'0')*i16x4_mul[0] + (i32x4[1]-'0')*i16x4_mul[1] + (i32x4[2]-'0')*i16x4_mul[2] + (i32x4[3]-'0')*i16x4_mul[3]
+		static int cvt_xcharx4_i32(__m128i i32x4, __m128i i16x4_mul) noexcept
 		{
-			constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
-			constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
-			constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
-			constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
-			constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
+			__m128i i16x4 = _mm_packs_epi32(i32x4, _mm_setzero_si128());
+			return x_convert_char_selector<2>::cvt_xcharx4_i32(i16x4, i16x4_mul);
+		}
 
-			const type* s = psz;
-			for (; s < e; )
+		enum
+		{
+			MASK4 = 0xffff,
+			MASK3 = 0x0fff,
+			MASK2 = 0x00ff,
+			MASK1 = 0x000f,
+		};
+	};
+
+	//将字符串转化为整数
+	//当遇到非数字字符，或者超过int64_t可表达的范围，则停止
+	//psz:将要转换的字符串
+	//overflow:输出参数，如果溢出则填为true；否则，不会改变overflow的值
+	//返回值:已经转换的整数
+	template<class type>
+	int64_t x_mm_convert_charx4_long(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
+	{
+		using traits_t = x_convert_char_selector<sizeof(type)>;
+
+		constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
+		constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
+		constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
+		constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
+		constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
+
+		const type* s = psz;
+		for (; s < e; )
+		{
+			auto remaind = e - s;
+
+			__m128i i8x4 = traits_t::load_xcharx4(s);
+			int mask = traits_t::digit_mask(i8x4);
+			if (mask == traits_t::MASK4 && remaind >= 4)
 			{
-				auto remaind = e - s;
+				if (result > LIMIT_LONG_9999) break;
 
-				__m128i i32x4 = load_xcharx4(s);
-				int mask = digit_mask(i32x4);
-				if (mask == 0xffff && remaind >= 4)
-				{
-					if (result > LIMIT_LONG_9999) break;
-
-					int val = x_mm_cvt_i32x4_i32(i32x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
-					result = result * 10000 + val;
-					s += 4;
-				}
-				else if ((mask & 0x0fff) == 0x0fff && remaind >= 3)
-				{
-					if (result > LIMIT_LONG_999) break;
-
-					int val = x_mm_cvt_i32x4_i32(i32x4, _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100));
-					result = result * 1000 + val;
-
-					psz = s + 3;
-					return result;
-				}
-				else if ((mask & 0x00ff) == 0x00ff && remaind >= 2)
-				{
-					if (result > LIMIT_LONG_99) break;
-
-					//int val = x_mm_cvt_i8x4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
-					int val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
-					result = result * 100 + val;
-
-					psz = s + 2;
-					return result;
-				}
-				else if ((mask & 0x000f) == 0x000f)
-				{
-					if (result > LIMIT_LONG_9) break;
-
-					int val = *s - (type)'0';
-					result = result * 10 + val;
-
-					psz = s + 1;
-					return result;
-				}
-				else
-				{
-					psz = s;
-					return result;
-				}
+				int val = traits_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
+				result = result * 10000 + val;
+				s += 4;
 			}
-
-			for (; s < e && x_is_digit(*s); ++s)
+			else if ((mask & traits_t::MASK3) == traits_t::MASK3 && remaind >= 3)
 			{
-				if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
-				{
-					if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= '8')
-					{
-						overflow = true;
-						break;
-					}
-				}
+				if (result > LIMIT_LONG_999) break;
+
+				int val = traits_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100));
+				result = result * 1000 + val;
+
+				psz = s + 3;
+				return result;
+			}
+			else if ((mask & traits_t::MASK2) == traits_t::MASK2 && remaind >= 2)
+			{
+				if (result > LIMIT_LONG_99) break;
+
+				//int val = traits_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
+				int val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
+				result = result * 100 + val;
+
+				psz = s + 2;
+				return result;
+			}
+			else if ((mask & traits_t::MASK1) == traits_t::MASK1)
+			{
+				if (result > LIMIT_LONG_9) break;
 
 				int val = *s - (type)'0';
 				result = result * 10 + val;
+
+				psz = s + 1;
+				return result;
+			}
+			else
+			{
+				psz = s;
+				return result;
+			}
+		}
+
+		for (; s < e && x_is_digit(*s); ++s)
+		{
+			if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
+			{
+				if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= (type)'8')
+				{
+					overflow = true;
+					break;
+				}
 			}
 
-			psz = s;
-			return result;
+			int val = *s - (type)'0';
+			result = result * 10 + val;
 		}
-	};
+
+		psz = s;
+		return result;
+	}
 
 	static const double DOUBLE_E[] =
 	{ // 1e-0...1e308: 309 * 8 bytes = 2472 bytes
@@ -491,8 +348,6 @@ namespace
 	template<class _CharType>
 	std::tuple<number_value, parser_result> simd_double_parser2(const _CharType*& s, const _CharType* const pszEnd) noexcept
 	{
-		typedef x_convert_char_selector<sizeof(_CharType)> char_selector;
-
 		const _CharType* psz = s;
 
 		//先处理正负号
@@ -510,7 +365,7 @@ namespace
 
 		double dval = 0.0f;
 		bool useDouble = false;	//初始没溢出，如果整数溢出了，则需要使用浮点数算法
-		int64_t i64 = char_selector::convert_long(0, psz, pszEnd, useDouble);
+		int64_t i64 = x_mm_convert_charx4_long(0, psz, pszEnd, useDouble);
 		if (useDouble)
 		{//精度溢出，使用浮点数算法
 			dval = (double)i64;
@@ -527,7 +382,7 @@ namespace
 
 			if (!useDouble)
 			{//还未溢出，解析小数点后面的整数
-				i64 = char_selector::convert_long(i64, psz, pszEnd, useDouble);
+				i64 = x_mm_convert_charx4_long(i64, psz, pszEnd, useDouble);
 			}
 			dval = (double)i64;
 
@@ -572,7 +427,7 @@ namespace
 			}
 
 			bool overflow = false;	//初始没溢出，如果整数溢出了，则认为这是一个无效的数
-			int64_t e2 = char_selector::convert_long(0, psz, pszEnd, overflow);
+			int64_t e2 = x_mm_convert_charx4_long(0, psz, pszEnd, overflow);
 
 			if (overflow || e2 > ((std::numeric_limits<int32_t>::max)() / 2))
 			{

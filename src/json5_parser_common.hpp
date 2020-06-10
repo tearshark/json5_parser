@@ -109,6 +109,8 @@ void _json_print_char_flag()
 	}
 }
 
+#if !JSON_ENABLE_SIMD_PARSER
+
 static const double JSON_E[] =
 { // 1e-0...1e308: 309 * 8 bytes = 2472 bytes
 	1e+0,
@@ -182,3 +184,5 @@ static inline bool StrtodFast(double d, int p, double* result) noexcept
 		return false;
 	}
 }
+
+#endif //!JSON_ENABLE_SIMD_PARSER

@@ -1,7 +1,6 @@
 #pragma once
 #include <limits>
 #include <tuple>
-#include <cstdlib>
 
 #include <emmintrin.h>		//SSE2
 
