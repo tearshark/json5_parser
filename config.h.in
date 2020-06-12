@@ -1,5 +1,7 @@
 #pragma once
 
+#define VFX_API
+
 #ifndef JSON_ENABLE_JSON5
 #cmakedefine JSON_ENABLE_JSON5 @JSON_ENABLE_JSON5@
 #endif	//JSON_ENABLE_JSON5

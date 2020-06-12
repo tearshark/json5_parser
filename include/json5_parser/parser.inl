@@ -19,10 +19,10 @@ struct JSON_Parser
 	因此，要使用分析后的结果，需要保持psz仍然是有效的
 	JSON_Parse类会保存参数psz指针，但不管理psz内存的释放
 	*/
-	bool Parse(JSON_Walker* walker, LPCXSTR psz, LPCXSTR * ppszEnd = nullptr);
+	VFX_API bool Parse(JSON_Walker* walker, LPCXSTR psz, LPCXSTR * ppszEnd = nullptr);
 	LPCXSTR Error() const  noexcept { return m_pError; }
 
-	static int64_t _parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexcept;
+	VFX_API static int64_t _parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexcept;
 private:
 	bool parse_start(LPCXSTR& s, LPCXSTR e);
 	bool parse_pair(LPCXSTR& s, LPCXSTR e);
@@ -40,4 +40,4 @@ private:
 	LPCXSTR				m_pError = nullptr;
 };
 
-LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept;
+VFX_API LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept;

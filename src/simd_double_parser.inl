@@ -233,7 +233,7 @@ namespace
 #if defined(_M_X64) || defined(__x86_64__)
 		i8x8 = _mm_cvtsi64_si128(u8x8);
 #elif defined(_M_IX86) || defined(__i386__)
-		i8x8 = _mm_set_epi32(0, 0, u8x8>>32, u8x8);
+		i8x8 = _mm_set_epi32(0, 0, static_cast<uint32_t>(u8x8>>32), static_cast<uint32_t>(u8x8));
 #else
 #error "Unknown platform"
 #endif

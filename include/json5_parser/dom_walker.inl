@@ -27,9 +27,9 @@ struct alignas(32) JSON_Value
 		return (JSON_Type)(this->type & JSON_Type::LONG_MASK);
 	}
 
-	size_t ElementsCount() const noexcept;
-	std::basic_string<XCHAR> GetName() const;
-	std::basic_string<XCHAR> GetString() const;
+	VFX_API size_t ElementsCount() const noexcept;
+	VFX_API std::basic_string<XCHAR> GetName() const;
+	VFX_API std::basic_string<XCHAR> GetString() const;
 
 	template<class _Vistor>
 	void ForeachElements(const _Vistor& vistor) const
@@ -77,8 +77,8 @@ struct JSON_DOMWalker : public JSON_Walker
 {
 	std::function<void(LPCXSTR err, LPCXSTR stoped)> ErrorReport;
 
-	JSON_DOMWalker(size_t nNunBatch);
-	~JSON_DOMWalker();
+	VFX_API JSON_DOMWalker(size_t nNunBatch);
+	VFX_API ~JSON_DOMWalker();
 
 	const JSON_Value* Value() const  noexcept { return m_pRootValue; }
 	size_t Count() const  noexcept { return m_Alloctor.size(); }

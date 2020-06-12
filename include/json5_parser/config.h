@@ -1,5 +1,7 @@
 #pragma once
 
+#define VFX_API
+
 #ifndef JSON_ENABLE_JSON5
 #define JSON_ENABLE_JSON5 1
 #endif	//JSON_ENABLE_JSON5
