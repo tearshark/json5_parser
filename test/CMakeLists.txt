@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(json5_test)
 
-set(SRC test_simd_parser.cpp)
+set(SRC vistor.cpp)
 
 include_directories(${PROJECT_SOURCE_DIR}/../include)
 

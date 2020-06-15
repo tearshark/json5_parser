@@ -15,13 +15,14 @@ static void report_file_location(const char* path, const char* psz, const char* 
 	size_t line = 0, column = 0;
 	for (; psz < err; ++psz)
 	{
-		if (*psz == '\r')
+		if (*psz == '\n')
 		{
 			++line;
 			column = 0;
+			continue;
 		}
 
-		if (*psz != '\n')
+		if (*psz != '\r')
 			column++;
 	}
 
@@ -56,8 +57,13 @@ std::unique_ptr<char[]> load_json_from_file(_Walker& walker, const char* path)
 	{
 		walker.ErrorReport = [path, psz = psz.get()](const char* err, const char* stoped)
 		{
-			char* newline = const_cast<char*>(strchr(stoped, '\r'));
-			if (newline != nullptr) *newline = 0;
+			char* newline = const_cast<char*>(strchr(stoped, '\n'));
+			if (newline != nullptr)
+			{
+				if (newline - stoped > 80)
+					newline = (char*)stoped + 80;
+				*newline = 0;
+			}
 
 			report_file_location(path, psz, stoped);
 			std::cout << " : error '" << err << "' at:" << std::endl << stoped << std::endl;

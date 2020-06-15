@@ -418,19 +418,41 @@ namespace
 
 		if (psz >= pszEnd)
 		{
-			number_value nv = { 0 };
-			return { nv, parser_result::Invalid };
+			return { number_value{0}, parser_result::Invalid };
 		}
 
 		intptr_t exp = 0;
-
-		double dval = 0.0f;
 		bool useDouble = false;	//初始没溢出，如果整数溢出了，则需要使用浮点数算法
-		int64_t i64 = x_mm_convert_string_long(0, psz, pszEnd, useDouble);
+		int64_t i64;
+
+		if (*psz == '0')
+		{
+			++psz;
+			if (psz >= pszEnd)
+			{
+				s = psz;
+				return { number_value{0}, parser_result::Long };
+			}
+			else if (*psz == '.')
+			{
+				i64 = 0;
+				goto label_dot;
+			}
+			else if (!x_is_digit(*psz))
+			{
+				s = psz;
+				return { number_value{0}, parser_result::Long };
+			}
+			else
+			{
+				s = psz;
+				return { number_value{0}, parser_result::Invalid };
+			}
+		}
+
+		i64 = x_mm_convert_string_long(0, psz, pszEnd, useDouble);
 		if (useDouble)
 		{//精度溢出，使用浮点数算法
-			dval = (double)i64;
-
 			const _CharType* const pszSaved = psz;
 			for (; x_is_digit(*psz); ++psz);
 			exp = psz - pszSaved;
@@ -438,6 +460,7 @@ namespace
 
 		if (psz < pszEnd && *psz == '.')
 		{//遇到小数点了
+	label_dot:
 			++psz;
 			const _CharType* pszDot = psz;
 
@@ -445,7 +468,6 @@ namespace
 			{//还未溢出，解析小数点后面的整数
 				i64 = x_mm_convert_string_long(i64, psz, pszEnd, useDouble);
 			}
-			dval = (double)i64;
 
 			if (useDouble)
 			{
@@ -465,7 +487,6 @@ namespace
 		{//解析指数
 			if (!useDouble)
 			{//如果之前是整数，则接下来要按照浮点数进行解析了
-				dval = (double)i64;
 				useDouble = true;
 			}
 			++psz;
@@ -483,8 +504,8 @@ namespace
 
 			if (psz >= pszEnd)
 			{
-				number_value nv = { 0 };
-				return { nv, parser_result::Invalid };
+				s = psz;
+				return { number_value{0}, parser_result::Invalid };
 			}
 
 			bool overflow = false;	//初始没溢出，如果整数溢出了，则认为这是一个无效的数
@@ -492,8 +513,8 @@ namespace
 
 			if (overflow || e2 > ((std::numeric_limits<int32_t>::max)() / 2))
 			{
-				number_value nv = { 0 };
-				return { nv, parser_result::Invalid };
+				s = psz;
+				return { number_value{0}, parser_result::Invalid };
 			}
 
 			//将指数累积上去
@@ -505,13 +526,14 @@ namespace
 
 		if (useDouble)
 		{
+			double dval;
 			if (exp < -330)	//330 = 308 + 22
 			{
 				dval = 0.0;
 			}
 			else if (exp < -308)
 			{
-				dval = x_fast_path(dval, -308);
+				dval = x_fast_path((double)i64, -308);
 				dval = x_fast_path(dval, exp + 308);
 			}
 			else if (exp > 330)	//330 = 308 + 22
@@ -520,12 +542,16 @@ namespace
 			}
 			else if (exp > 308)
 			{
-				dval = x_fast_path(dval, 308);
+				dval = x_fast_path((double)i64, 308);
 				dval = x_fast_path(dval, exp - 308);
 			}
 			else if (exp != 0)
 			{
-				dval = x_fast_path(dval, exp);
+				dval = x_fast_path((double)i64, exp);
+			}
+			else
+			{
+				dval = (double)i64;
 			}
 
 			number_value nv;

@@ -36,4 +36,4 @@ inline JSON_Type operator | (JSON_Type left, JSON_Type right)
 	return (JSON_Type)((uint8_t)left | (uint8_t)right);
 }
 
-const uint32_t JSONT_NOT_CLASS = 0x78;
+const uint32_t JSONT_NOT_CLASS = 0xCF;
