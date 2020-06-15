@@ -425,6 +425,7 @@ namespace
 		bool useDouble = false;	//初始没溢出，如果整数溢出了，则需要使用浮点数算法
 		int64_t i64;
 
+#if 1
 		if (*psz == '0')
 		{
 			++psz;
@@ -449,6 +450,7 @@ namespace
 				return { number_value{0}, parser_result::Invalid };
 			}
 		}
+#endif
 
 		i64 = x_mm_convert_string_long(0, psz, pszEnd, useDouble);
 		if (useDouble)
