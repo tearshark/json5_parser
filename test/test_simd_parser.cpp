@@ -3,6 +3,7 @@
 #include <inttypes.h>
 
 #include "../src/simd_double_parser.h"
+#include "../src/fast_double_parser.h"
 
 int main(int argc, char* argv[])
 {
@@ -120,8 +121,10 @@ int main(int argc, char* argv[])
 
 	for (const char* s : psz)
 	{
+		const size_t l = strlen(s);
 		const char* t = s;
-		std::tie(nv, isDouble) = simd_double_parser::parser(t, s + strlen(s));
+/*
+		std::tie(nv, isDouble) = simd_double_parser::parser(t, s + l);
 		if (isDouble == simd_double_parser::parser_result::Double)
 		{
 			printf("'%s' is double, value=%.16lE\r\n", s, nv.d);
@@ -135,6 +138,31 @@ int main(int argc, char* argv[])
 				printf("Huge difference. 'strtold' is %s.\r\n", buff2);
 		}
 		else if (isDouble == simd_double_parser::parser_result::Long)
+		{
+			printf("'%s' is long, value=%" PRId64 "\r\n", s, nv.l);
+		}
+		else
+		{
+			printf("'%s' is invalid\r\n", s);
+		}
+
+		t = s;
+*/
+		auto result = fast_double_parser::parse_number_base<char, '.'>(t, &nv.d, s + l);
+		if (result == fast_double_parser::result_type::Double)
+		{
+			printf("'%s' is double, value=%.16lE\r\n", s, nv.d);
+
+			double d2 = std::strtold(s, nullptr);
+			char buff1[64];
+			char buff2[64];
+			sprintf(buff1, "%.17lE", nv.d);
+			sprintf(buff2, "%.17lE", d2);
+			//if (strcmp(buff1, buff2) != 0)
+			if (nv.d != d2)
+				printf("Huge difference. 'strtold' is %s.\r\n", buff2);
+		}
+		else if (result == fast_double_parser::result_type::Long)
 		{
 			printf("'%s' is long, value=%" PRId64 "\r\n", s, nv.l);
 		}
