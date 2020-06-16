@@ -707,7 +707,7 @@ bool JSON_Parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
 	}
 	else if (result == fast_double_parser::result_type::Long)
 	{
-		m_pWalker->PushLong(JSON_Type::DecimalLong, (int64_t)dval);
+		m_pWalker->PushLong(JSON_Type::DecimalLong, reinterpret_cast<int64_t&>(dval));
 		return true;
 	}
 	else
