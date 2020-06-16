@@ -698,184 +698,23 @@ bool JSON_Parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
 
 bool JSON_Parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
 {
-	LPCXSTR s = psz;
-
-	bool minus = *s == '-';
-	if (minus) ++s;
-	else if (*s == '+') ++s;
-
-	if (s >= e)
+	double dval;
+	fast_double_parser::result_type result = fast_double_parser::parse_number_base<XCHAR, '.'>(psz, &dval, e);
+	if (result == fast_double_parser::result_type::Double)
 	{
-		set_error(X_T("unexpected end."));
-		RET_NULL;
+		m_pWalker->PushDouble(dval);
+		return true;
 	}
-
-	//十进制整数或者浮点数
-	uint64_t i64 = 0;
-	double d = 0.0;
-	int significandDigit = 0;
-
-	bool useDouble = false;
-	while (s < e && _json_is_digit(*s))
+	else if (result == fast_double_parser::result_type::Long)
 	{
-		if (i64 >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
-		{
-			if (i64 != 0x0CCCCCCCCCCCCCCCULL || *s >= '8')
-			{
-				d = static_cast<double>(i64);
-				useDouble = true;
-				break;
-			}
-		}
-
-		int dgt = *s++ - '0';
-		i64 = i64 * 10 + dgt;
-		significandDigit++;
-	}
-
-	if (useDouble)
-	{
-		while (s < e && _json_is_digit(*s))
-		{
-			if (d >= 1.7976931348623157e307)	// DBL_MAX / 10.0
-			{
-				set_error(X_T("numbers out of range."));
-				return false;
-			}
-
-			int dgt = *s++ - '0';
-			d = d * 10.0 + dgt;
-		}
-	}
-
-	int expFrac = 0;
-	if (s < e && *s == '.')
-	{
-		++s;
-		if (s >= e)
-		{
-			set_error(X_T("unexpected end."));
-			RET_NULL;
-		}
-
-		//if (!_json_is_digit(*s)) RET_NULL;
-
-		if (!useDouble)
-		{
-			int dgt;
-			while (s < e && _json_is_digit(dgt = *s))
-			{
-				if (i64 <= 0x1FFFFFFFFFFFFFULL) //2^53 - 1 for fast path
-				{
-					++s;
-					--expFrac;
-					i64 = i64 * 10 + dgt - '0';
-					if (i64 != 0)
-						significandDigit++;
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			d = static_cast<double>(i64);
-			useDouble = true;
-		}
-
-		int dgt;
-		while (s < e && _json_is_digit(dgt = *s))
-		{
-			if (significandDigit < 17)
-			{
-				--expFrac;
-				dgt -= '0';
-				d = d * 10.0 + dgt;
-				if (d > 0.0)
-					significandDigit++;
-			}
-			++s;
-		}
-	}
-
-	int exp = 0;
-	if (s < e && (*s | 32) == 'e')
-	{
-		++s;
-
-		if (!useDouble)
-		{
-			d = static_cast<double>(i64);
-			useDouble = true;
-		}
-
-		bool expMinus = false;
-		if (s < e && *s == '+')
-		{
-			++s;
-		}
-		else if (s < e && *s == '-')
-		{
-			++s;
-			expMinus = true;
-		}
-
-		if (s < e && _json_is_digit(*s))
-		{
-			exp = *s++ - '0';
-			if (expMinus)
-			{
-				while (s < e && _json_is_digit(*s))
-				{
-					int dgt = *s++ - '0';
-					exp = exp * 10 + dgt;
-					if (exp >= 214748364)
-					{
-						while (s < e && _json_is_digit(*s))
-							++s;
-					}
-				}
-			}
-			else
-			{
-				int maxExp = 308 - expFrac;
-				while (s < e && _json_is_digit(*s))
-				{
-					int dgt = *s++ - '0';
-					exp = exp * 10 + dgt;
-					if (exp > maxExp)
-					{
-						set_error(X_T("numbers out of range."));
-						return false;
-					}
-				}
-			}
-		}
-		else
-		{
-			set_error(X_T("illegal number."));
-			return false;
-		}
-
-		if (expMinus)
-			exp = -exp;
-	}
-
-	if (useDouble)
-	{
-		int p = exp + expFrac;
-		d = StrtodNormalPrecision(d, p);
-
-		m_pWalker->PushDouble(minus ? -d : d);
+		m_pWalker->PushLong(JSON_Type::DecimalLong, (int64_t)dval);
+		return true;
 	}
 	else
 	{
-		int64_t l = minus ? static_cast<int64_t>(~i64 + 1) : static_cast<int64_t>(i64);
-		m_pWalker->PushLong(JSON_Type::DecimalLong, l);
+		set_error(X_T("invalid number."));
+		return false;
 	}
-
-	psz = s;
-	return true;
 }
 
 #endif
