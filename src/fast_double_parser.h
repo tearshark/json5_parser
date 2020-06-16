@@ -72,10 +72,10 @@ struct value128 {
     !defined(_M_X64) && !defined(_M_ARM64)// _umul128 for x86, arm
 // this is a slow emulation routine for 32-bit Windows
 //
-static inline uint64_t __emulu(uint32_t x, uint32_t y) {
+static really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
   return x * (uint64_t)y;
 }
-static inline uint64_t _umul128(uint64_t ab, uint64_t cd, uint64_t *hi) {
+static really_inline uint64_t _umul128(uint64_t ab, uint64_t cd, uint64_t *hi) {
   uint64_t ad = __emulu((uint32_t)(ab >> 32), (uint32_t)cd);
   uint64_t bd = __emulu((uint32_t)ab, (uint32_t)cd);
   uint64_t adbc = ad + __emulu((uint32_t)ab, (uint32_t)(cd >> 32));
@@ -107,7 +107,7 @@ really_inline value128 full_multiplication(uint64_t value1, uint64_t value2) {
 
 
 /* result might be undefined when input_num is zero */
-int leading_zeroes(uint64_t input_num) {
+really_inline int leading_zeroes(uint64_t input_num) {
 #ifdef _MSC_VER
   unsigned long leading_zero = 0;
   // Search the mask data from most significant bit (MSB)
@@ -1109,7 +1109,7 @@ const uint64_t mantissa_128[] = {0x419ea3bd35385e2d,
 // set to false. This should work *most of the time* (like 99% of the time).
 // We assume that power is in the [FASTFLOAT_SMALLEST_POWER,
 // FASTFLOAT_LARGEST_POWER] interval: the caller is responsible for this check.
-disable_inline double compute_float_64(int64_t power, uint64_t i, bool negative,
+really_inline double compute_float_64(int64_t power, uint64_t i, bool negative,
                                       bool *success) {
 
 /*
@@ -1290,7 +1290,7 @@ disable_inline double compute_float_64(int64_t power, uint64_t i, bool negative,
   return d;
 }
 
-disable_inline
+really_inline
 static result_type parse_float_strtod(const char *&ptr, double *outDouble, const char *pend) {
   char *endptr = (char *)pend;
   *outDouble = strtod(ptr, &endptr);
@@ -1313,7 +1313,7 @@ static result_type parse_float_strtod(const char *&ptr, double *outDouble, const
   return result_type::Double;
 }
 
-disable_inline
+really_inline
 static result_type parse_float_strtod(const wchar_t *&ptr, double *outDouble, const wchar_t*pend) {
     wchar_t* endptr = (wchar_t *)pend;
 	*outDouble = wcstod(ptr, &endptr);
@@ -1360,7 +1360,7 @@ really_inline bool is_one_of(_Char v)
 }
 #else
 template <class _Char, _Char... Values>
-bool is_one_of(_Char v)
+really_inline bool is_one_of(_Char v)
 {
   return ((v == Values) || ...);
 }
@@ -1370,7 +1370,7 @@ bool is_one_of(_Char v)
 // parse the number at p
 template <class _Char, _Char... DecSeparators>
 WARN_UNUSED
-disable_inline result_type parse_number_base(const _Char*&pinit, double *outDouble, const _Char* pend) {
+result_type parse_number_base(const _Char*&pinit, double *outDouble, const _Char* pend) {
   typedef typename std::make_unsigned<_Char>::type _Uchar;
   const _Char*p = pinit;
   bool found_minus = (*p == '-');
