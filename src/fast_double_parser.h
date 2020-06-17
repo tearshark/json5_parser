@@ -10,6 +10,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <type_traits>
+#include <wchar.h>
 
 #ifdef _MSC_VER
 #include <intrin.h>
