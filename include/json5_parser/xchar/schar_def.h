@@ -236,13 +236,10 @@
 #define _xcsxfrm    strxfrm
 
 #if defined(WIN32)
-#if _MSC_FULL_VER >= 1400
 #define _xcslwr_s   _strlwr_s
 #define _xcsupr_s   _strupr_s
-#else
-#define _xcslwr_s(s,l)   _strlwr(s)
-#define _xcsupr_s(s,l)   _strupr(s)
-#endif
+//#define _xcslwr_s(s,l)   _strlwr(s)
+//#define _xcsupr_s(s,l)   _strupr(s)
 #else
 #define _xcslwr_s(s,l)   strlwr(s)
 #define _xcsupr_s(s,l)   strupr(s)

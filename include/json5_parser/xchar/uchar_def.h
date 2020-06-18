@@ -27,13 +27,10 @@
 #define _sxscanf    swscanf
 #define _snxscanf   _snwscanf
 
-#if _MSC_FULL_VER >= 1400
 #define _sxscanf_s  swscanf_s
 #define _vsnxprintf_s _vsnwprintf_s
-#else
-#define _sxscanf_s  swscanf
-#define _vsnxprintf_s(_DstBuf,_DstSize,_MaxCount,_Format,_ArgList) _vsnwprintf((_DstBuf),(_MaxCount),(_Format),(_ArgList))
-#endif
+//#define _sxscanf_s  swscanf
+//#define _vsnxprintf_s(_DstBuf,_DstSize,_MaxCount,_Format,_ArgList) _vsnwprintf((_DstBuf),(_MaxCount),(_Format),(_ArgList))
 
 /* Unformatted i/o */
 #define _fgetxc     fgetwc
@@ -219,13 +216,10 @@
 #define _xcsupr     _wcsupr
 #define _xcsxfrm    wcsxfrm
 
-#if _MSC_FULL_VER >= 1400
 #define _xcslwr_s   _wcslwr_s
 #define _xcsupr_s   _wcsupr_s
-#else
-#define _xcslwr_s(s,l)   _wcslwr((s))
-#define _xcsupr_s(s,l)   _wcsupr((s))
-#endif
+//#define _xcslwr_s(s,l)   _wcslwr((s))
+//#define _xcsupr_s(s,l)   _wcsupr((s))
 
 #define _xclen(_pc) (1)
 #define _xccpy(_pc1,_cpc2) ((*(_pc1) = *(_cpc2)))
