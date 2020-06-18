@@ -14,11 +14,11 @@
 #define _fxprintf   fprintf
 #define _sxprintf   sprintf
 #define _scxprintf  _scprintf
-#define _snxprintf  _snprintf
+#define _snxprintf  snprintf
 #define _snxprintf_s  _snprintf_s
 #define _vxprintf   vprintf
 #define _vfxprintf  vfprintf
-#define _vsxprintf  vsprintf
+#define _vsxprintf  vsnprintf
 #define _vscxprintf _vscprintf
 #if _MSC_FULL_VER >= 1400
 #define _vsnxprintf _vsnprintf

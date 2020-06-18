@@ -14,7 +14,7 @@
 #define _fxprintf   fwprintf
 #define _sxprintf   swprintf
 #define _scxprintf  _scwprintf
-#define _snxprintf  _snwprintf
+#define _snxprintf  swprintf
 #define _snxprintf_s  _snwprintf_s
 #define _vxprintf   vwprintf
 #define _vfxprintf  vfwprintf
@@ -98,7 +98,7 @@
 #define _xcsset     _wcsset
 
 #define _xcscmp     wcscmp
-#define _xcsicmp    _wcsicmp
+#define _xcsicmp    wcsicmp
 #define _xcsnccmp   wcsncmp
 #define _xcsncmp    wcsncmp
 #define _xcsncicmp  _wcsnicmp
