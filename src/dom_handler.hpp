@@ -60,17 +60,17 @@ JSON_Value* JSON_Alloctor::alloc()
 
 
 
-JSON_DOMWalker::JSON_DOMWalker(size_t nNunBatch)
+SAX_DOMHandler::SAX_DOMHandler(size_t nNunBatch)
 	: m_Alloctor(nNunBatch)
 	, m_pRootValue(nullptr)
 {
 }
 
-JSON_DOMWalker::~JSON_DOMWalker()
+SAX_DOMHandler::~SAX_DOMHandler()
 {
 }
 
-inline void JSON_DOMWalker::SetNameIf(JSON_Value* v) noexcept
+inline void SAX_DOMHandler::SetNameIf(JSON_Value* v) noexcept
 {
 	if (m_pRootValue->type == JSON_Type::Object)
 	{
@@ -87,7 +87,7 @@ inline void JSON_DOMWalker::SetNameIf(JSON_Value* v) noexcept
 	m_pRootValue->elements = v;
 }
 
-void* JSON_DOMWalker::PushObject(bool root)
+void* SAX_DOMHandler::start_object(bool root)
 {
 	JSON_Value* v = m_Alloctor.alloc();
 	v->type = JSON_Type::Object;
@@ -109,12 +109,12 @@ void* JSON_DOMWalker::PushObject(bool root)
 	}
 }
 
-void JSON_DOMWalker::PopObject(void* v)
+void SAX_DOMHandler::end_object(void* v)
 {
 	m_pRootValue = reinterpret_cast<JSON_Value*>(v);
 }
 
-void* JSON_DOMWalker::PushArray(bool root)
+void* SAX_DOMHandler::start_array(bool root)
 {
 	JSON_Value* v = m_Alloctor.alloc();
 	v->type = JSON_Type::Array;
@@ -136,19 +136,19 @@ void* JSON_DOMWalker::PushArray(bool root)
 	}
 }
 
-void JSON_DOMWalker::PopArray(void* v)
+void SAX_DOMHandler::end_array(void* v)
 {
 	m_pRootValue = reinterpret_cast<JSON_Value*>(v);
 }
 
-void JSON_DOMWalker::PushNull()
+void SAX_DOMHandler::null()
 {
 	JSON_Value* v = m_Alloctor.alloc();
 	v->type = JSON_Type::Nullptr;
 	SetNameIf(v);
 }
 
-void JSON_DOMWalker::PushString(JSON_String str)
+void SAX_DOMHandler::string(JSON_String str)
 {
 	JSON_Value* v = m_Alloctor.alloc();
 	v->type = JSON_Type::String;
@@ -157,7 +157,7 @@ void JSON_DOMWalker::PushString(JSON_String str)
 	SetNameIf(v);
 }
 
-void JSON_DOMWalker::PushDouble(double value)
+void SAX_DOMHandler::number_float(double value)
 {
 	JSON_Value* v = m_Alloctor.alloc();
 	v->type = JSON_Type::Double;
@@ -165,7 +165,7 @@ void JSON_DOMWalker::PushDouble(double value)
 	SetNameIf(v);
 }
 
-void JSON_DOMWalker::PushLong(JSON_Type type, int64_t value)
+void SAX_DOMHandler::number_integer(JSON_Type type, int64_t value)
 {
 	JSON_Value* v = m_Alloctor.alloc();
 	v->type = type;
@@ -173,7 +173,7 @@ void JSON_DOMWalker::PushLong(JSON_Type type, int64_t value)
 	SetNameIf(v);
 }
 
-void JSON_DOMWalker::PushBoolean(bool value)
+void SAX_DOMHandler::boolean(bool value)
 {
 	JSON_Value* v = m_Alloctor.alloc();
 	v->type = JSON_Type::Boolean;
@@ -181,12 +181,12 @@ void JSON_DOMWalker::PushBoolean(bool value)
 	SetNameIf(v);
 }
 
-void JSON_DOMWalker::PushName(JSON_String name)
+void SAX_DOMHandler::key(JSON_String name)
 {
 	m_ChildName = name;
 }
 
-void JSON_DOMWalker::ErrorStop(LPCXSTR err, LPCXSTR stoped)
+void SAX_DOMHandler::parse_error(LPCXSTR err, LPCXSTR stoped)
 {
 	m_pRootValue = nullptr;
 	if (ErrorReport)

@@ -31,13 +31,13 @@ namespace json5
 
 namespace unicode
 {
-#include "json5_parser/walker.inl"
+#include "json5_parser/sax_handler.inl"
 #include "json5_parser/parser.inl"
 #include "parser.hpp"
 
-#if JSON_ENABLE_DOM_WALKER
-#include "json5_parser/dom_walker.inl"
-#include "dom_walker.hpp"
+#if JSON_ENABLE_DOM_HANDLER
+#include "json5_parser/dom_handler.inl"
+#include "dom_handler.hpp"
 #endif
 }
 
@@ -48,13 +48,13 @@ namespace unicode
 
 namespace singlebyte
 {
-#include "json5_parser/walker.inl"
+#include "json5_parser/sax_handler.inl"
 #include "json5_parser/parser.inl"
 #include "parser.hpp"
 
-#if JSON_ENABLE_DOM_WALKER
-#include "json5_parser/dom_walker.inl"
-#include "dom_walker.hpp"
+#if JSON_ENABLE_DOM_HANDLER
+#include "json5_parser/dom_handler.inl"
+#include "dom_handler.hpp"
 #endif
 }
 

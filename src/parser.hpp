@@ -111,7 +111,7 @@ static inline LPCXSTR _json_shift_space(LPCXSTR _s, LPCXSTR _e) noexcept
 #else
 	while (_s < _e && _json_is_space(*_s)) _s++;
 	return _s;
-#endif
+#endif	//JSON5_ENABLE_COMMENTS
 }
 
 //不区分大小写的比较字符串
@@ -125,11 +125,11 @@ static inline LPCXSTR _json_cmp_string(LPCXSTR _s, LPCXSTR _e, LPCXSTR psz) noex
 	return *psz ? nullptr : _s;
 }
 
-bool JSON_Parser::Parse(JSON_Walker* walker, LPCXSTR psz, LPCXSTR * ppszEnd/* = nullptr*/)
+bool JSON_Parser::Parse(SAX_Handler* handler, LPCXSTR psz, LPCXSTR * ppszEnd/* = nullptr*/)
 {
-	assert(walker != nullptr);
+	assert(handler != nullptr);
 
-	m_pWalker = walker;
+	m_pWalker = handler;
 
 	if (psz == nullptr)
 		return false;
@@ -157,7 +157,7 @@ bool JSON_Parser::Parse(JSON_Walker* walker, LPCXSTR psz, LPCXSTR * ppszEnd/* = 
 		*ppszEnd = psz;
 
 	if (!ret)
-		m_pWalker->ErrorStop(m_pError, psz);
+		m_pWalker->parse_error(m_pError, psz);
 
 	return ret;
 }
@@ -187,7 +187,7 @@ bool JSON_Parser::parse_pair(LPCXSTR& psz, LPCXSTR e)
 	}
 	++s;
 
-	m_pWalker->PushName(name);
+	m_pWalker->key(name);
 
 	bool ret = parse_value(s, e);
 
@@ -208,13 +208,13 @@ bool JSON_Parser::parse_start(LPCXSTR& psz, LPCXSTR e)
 	if (*s == '{')
 	{
 		++s;
-		void* parent = m_pWalker->PushObject(true);
+		void* parent = m_pWalker->start_object(true);
 		ret = parse_object(parent, s, e);
 	}
 	else if(*s == '[')
 	{
 		++s;
-		void* parent = m_pWalker->PushArray(true);
+		void* parent = m_pWalker->start_array(true);
 		ret = parse_array(parent, s, e);
 	}
 	else
@@ -242,14 +242,14 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 	case '{':
 		{
 			++s;
-			void* parent = m_pWalker->PushObject(false);
+			void* parent = m_pWalker->start_object(false);
 			ret = parse_object(parent, s, e);
 		}
 		break;
 	case '[':
 		{
 			++s;
-			void* parent = m_pWalker->PushArray(false);
+			void* parent = m_pWalker->start_array(false);
 			ret = parse_array(parent, s, e);
 		}
 		break;
@@ -279,7 +279,7 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			{
 				s = st;
 				ret = true;
-				m_pWalker->PushBoolean(true);
+				m_pWalker->boolean(true);
 			}
 			else
 			{
@@ -299,7 +299,7 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			{
 				s = st;
 				ret = true;
-				m_pWalker->PushBoolean(false);
+				m_pWalker->boolean(false);
 			}
 			else
 			{
@@ -319,7 +319,7 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			{
 				s = st;
 				ret = true;
-				m_pWalker->PushNull();
+				m_pWalker->null();
 			}
 			else
 			{	//json5 NaN
@@ -328,7 +328,7 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				{
 					s = st;
 					ret = true;
-					m_pWalker->PushDouble(NAN);
+					m_pWalker->number_float(NAN);
 				}
 				else
 				{
@@ -349,7 +349,7 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 			{
 				s = st;
 				ret = true;
-				m_pWalker->PushDouble(INFINITY);
+				m_pWalker->number_float(INFINITY);
 			}
 			else
 			{
@@ -376,7 +376,7 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				if (st != nullptr)
 				{
 					ret = true;
-					m_pWalker->PushDouble((*s == '+') ? NAN : -NAN);
+					m_pWalker->number_float((*s == '+') ? NAN : -NAN);
 				}
 				s = st;
 				break;
@@ -387,7 +387,7 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 				if (st != nullptr)
 				{
 					ret = true;
-					m_pWalker->PushDouble((*s == '+') ? INFINITY : -INFINITY);
+					m_pWalker->number_float((*s == '+') ? INFINITY : -INFINITY);
 				}
 				s = st;
 				break;
@@ -430,7 +430,7 @@ __label_as_string:
 					else
 					{
 						ret = true;
-						m_pWalker->PushString(name);
+						m_pWalker->string(name);
 					}
 				}
 				break;
@@ -456,7 +456,7 @@ bool JSON_Parser::parse_object(void* const parent, LPCXSTR& s, LPCXSTR e)
 	if (*s == '}')
 	{//empty object
 		++s;
-		m_pWalker->PopObject(parent);
+		m_pWalker->end_object(parent);
 		return true;
 	}
 
@@ -473,7 +473,7 @@ bool JSON_Parser::parse_object(void* const parent, LPCXSTR& s, LPCXSTR e)
 		if (*s == '}')
 		{
 			++s;
-			m_pWalker->PopObject(parent);
+			m_pWalker->end_object(parent);
 			return true;
 		}
 		else if (*s == ',' JSON5_IF_ENABLE(|| *s == ';'))
@@ -497,7 +497,7 @@ __loop_json5_object_comma :
 			{
 #if JSON_ENABLE_JSON5
 				++s;
-				m_pWalker->PopObject(parent);
+				m_pWalker->end_object(parent);
 				return true;
 #else
 				set_error(X_T("extra comma."));
@@ -530,7 +530,7 @@ bool JSON_Parser::parse_array(void* const parent, LPCXSTR& s, LPCXSTR e)
 	if (*s == ']')
 	{//empty array
 		++s;
-		m_pWalker->PopArray(parent);
+		m_pWalker->end_array(parent);
 		return true;
 	}
 
@@ -547,7 +547,7 @@ bool JSON_Parser::parse_array(void* const parent, LPCXSTR& s, LPCXSTR e)
 		if (*s == ']')
 		{
 			++s;
-			m_pWalker->PopArray(parent);
+			m_pWalker->end_array(parent);
 			return true;
 		}
 		else if (*s == ',' JSON5_IF_ENABLE(|| *s == ';'))
@@ -571,7 +571,7 @@ __loop_json5_array_comma :
 			{
 #if JSON_ENABLE_JSON5
 				++s;
-				m_pWalker->PopArray(parent);
+				m_pWalker->end_array(parent);
 				return true;
 #else
 				set_error(X_T("extra comma."));
@@ -603,7 +603,7 @@ bool JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
 
 	if (s < e && (s - psz) <= (std::numeric_limits<int32_t>::max)())
 	{
-		m_pWalker->PushString(JSON_String{ psz, s });
+		m_pWalker->string(JSON_String{ psz, s });
 		psz = s + 1;
 
 		return true;
@@ -679,12 +679,12 @@ bool JSON_Parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
 	auto result = simd_double_parser::parser(psz, e);
 	if (std::get<1>(result) == simd_double_parser::parser_result::Double)
 	{
-		m_pWalker->PushDouble(std::get<0>(result).d);
+		m_pWalker->number_float(std::get<0>(result).d);
 		return true;
 	}
 	else if (std::get<1>(result) == simd_double_parser::parser_result::Long)
 	{
-		m_pWalker->PushLong(JSON_Type::DecimalLong, std::get<0>(result).l);
+		m_pWalker->number_integer(JSON_Type::DecimalLong, std::get<0>(result).l);
 		return true;
 	}
 	else
@@ -702,12 +702,12 @@ bool JSON_Parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
 	fast_double_parser::result_type result = fast_double_parser::parse_number_base<XCHAR, '.'>(psz, &dval, e);
 	if (result == fast_double_parser::result_type::Double)
 	{
-		m_pWalker->PushDouble(dval);
+		m_pWalker->number_float(dval);
 		return true;
 	}
 	else if (result == fast_double_parser::result_type::Long)
 	{
-		m_pWalker->PushLong(JSON_Type::DecimalLong, reinterpret_cast<int64_t&>(dval));
+		m_pWalker->number_integer(JSON_Type::DecimalLong, reinterpret_cast<int64_t&>(dval));
 		return true;
 	}
 	else
@@ -747,7 +747,7 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 				i64 = (i64 << 4) | i;
 			}
 
-			m_pWalker->PushLong(JSON_Type::HexLong, i64);
+			m_pWalker->number_integer(JSON_Type::HexLong, i64);
 
 			psz = s;
 			return true;
@@ -770,7 +770,7 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 				i64 = (i64 << 1) | i;
 			}
 
-			m_pWalker->PushLong(JSON_Type::BinaryLong, i64);
+			m_pWalker->number_integer(JSON_Type::BinaryLong, i64);
 
 			psz = s;
 			return true;
@@ -788,7 +788,7 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 				i64 = (i64 << 3) | i;
 			}
 
-			m_pWalker->PushLong(JSON_Type::OctalLong, i64);
+			m_pWalker->number_integer(JSON_Type::OctalLong, i64);
 
 			psz = s;
 			return true;

@@ -30,7 +30,7 @@ std::tuple<char*, size_t> load_from_file(const char* path)
 	return { nullptr, 0 };
 }
 
-template<class _Walker, class... Args>
+template<class _SAX, class... Args>
 void benchmark_json5_parser(const char* path, Args&&... args)
 {
 	std::cout << __FUNCTION__ << " parse file: " << path << std::endl;
@@ -45,10 +45,10 @@ void benchmark_json5_parser(const char* path, Args&&... args)
 		for (int i = 0; i < N; ++i)
 		{
 			json::parser parser;
-			_Walker walker(std::forward<Args>(args)...);
+			_SAX sax(std::forward<Args>(args)...);
 
 			const char* pszEnd = psz + length;
-			bool jv = parser.Parse(&walker, psz, &pszEnd);
+			bool jv = parser.Parse(&sax, psz, &pszEnd);
 			if (jv == false)
 			{
 				std::cout << "failed." << std::endl;
@@ -100,14 +100,14 @@ int main(int argc, char* argv[])
 	std::cout << "dummy" << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
-		benchmark_json5_parser<json5::singlebyte::JSON_DummyWalker>(argv[i]);
+		benchmark_json5_parser<json5::singlebyte::SAX_DummyHandler>(argv[i]);
 	}
 
 	std::cout << std::endl;
 	std::cout << "DOM" << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
-		benchmark_json5_parser<json5::singlebyte::JSON_DOMWalker>(argv[i], 1024);
+		benchmark_json5_parser<json5::singlebyte::SAX_DOMHandler>(argv[i], 1024);
 	}
 
 	std::cout << std::endl;

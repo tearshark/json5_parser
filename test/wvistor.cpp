@@ -55,14 +55,14 @@ std::unique_ptr<wchar_t[]> load_text_from_file(const char* path, size_t& wlength
 	return std::unique_ptr<wchar_t[]>{ pwsz };
 }
 
-template<class _Walker>
-std::unique_ptr<wchar_t[]> load_json_from_file(_Walker& walker, const char* path)
+template<class _SAX>
+std::unique_ptr<wchar_t[]> load_json_from_file(_SAX& sax, const char* path)
 {
 	size_t length;
 	std::unique_ptr<wchar_t[]> psz = load_text_from_file(path, length);
 	if (psz)
 	{
-		walker.ErrorReport = [path, psz = psz.get()](const wchar_t* err, const wchar_t* stoped)
+		sax.ErrorReport = [path, psz = psz.get()](const wchar_t* err, const wchar_t* stoped)
 		{
 			wchar_t* newline = const_cast<wchar_t*>(wcschr(stoped, '\r'));
 			if (newline != nullptr) *newline = 0;
@@ -73,8 +73,8 @@ std::unique_ptr<wchar_t[]> load_json_from_file(_Walker& walker, const char* path
 
 		json::parser parser;
 
-		const char* pszEnd = psz.get() + length;
-		bool jv = parser.Parse(&walker, psz.get(), &pszEnd);
+		const wchar_t* pszEnd = psz.get() + length;
+		bool jv = parser.Parse(&sax, psz.get(), &pszEnd);
 		if (jv == false)
 			psz = nullptr;
 	}
@@ -84,11 +84,11 @@ std::unique_ptr<wchar_t[]> load_json_from_file(_Walker& walker, const char* path
 
 void json5_vistor(const char* path)
 {
-	json::walker walker{ 1024 };
-	auto buffer = load_json_from_file(walker, path);
-	if (buffer != nullptr && walker.Value() != nullptr)
+	json::dom_handler sax{ 1024 };
+	auto buffer = load_json_from_file(sax, path);
+	if (buffer != nullptr && sax.Value() != nullptr)
 	{
-		walker.Value()->Vistor(
+		sax.Value()->Vistor(
 			[](const json::value* js, const json::value* parent)
 			{
 				if (parent != nullptr && parent->GetType() == json5::JSON_Type::Object)

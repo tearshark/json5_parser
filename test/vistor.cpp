@@ -82,7 +82,7 @@ std::unique_ptr<char[]> load_json_from_file(_Walker& walker, const char* path)
 
 void json5_vistor(const char* path)
 {
-	json::walker walker{ 1024 };
+	json::dom_handler walker{ 1024 };
 	auto buffer = load_json_from_file(walker, path);
 	if (buffer != nullptr && walker.Value() != nullptr)
 	{

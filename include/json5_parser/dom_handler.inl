@@ -73,27 +73,29 @@ private:
 	size_t				m_nNumBatch;
 };
 
-struct JSON_DOMWalker : public JSON_Walker
+struct SAX_DOMHandler : public SAX_Handler
 {
 	std::function<void(LPCXSTR err, LPCXSTR stoped)> ErrorReport;
 
-	VFX_API JSON_DOMWalker(size_t nNunBatch);
-	VFX_API ~JSON_DOMWalker();
+	VFX_API SAX_DOMHandler(size_t nNunBatch);
+	VFX_API ~SAX_DOMHandler();
 
 	const JSON_Value* Value() const  noexcept { return m_pRootValue; }
 	size_t Count() const  noexcept { return m_Alloctor.size(); }
 
-	virtual void PushNull() override;
-	virtual void* PushObject(bool root) override;
-	virtual void* PushArray(bool root) override;
-	virtual void PushString(JSON_String str) override;
-	virtual void PushDouble(double value) override;
-	virtual void PushLong(JSON_Type type, int64_t value) override;
-	virtual void PushBoolean(bool value) override;
-	virtual void PushName(JSON_String name) override;
-	virtual void PopObject(void*) override;
-	virtual void PopArray(void*) override;
-	virtual void ErrorStop(LPCXSTR err, LPCXSTR stoped) override;
+	virtual void number_integer(JSON_Type type, int64_t value) override;
+	virtual void number_float(double value) override;
+	virtual void string(JSON_String str) override;
+	virtual void boolean(bool value) override;
+	virtual void* start_object(bool root) override;
+	virtual void end_object(void*) override;
+	virtual void* start_array(bool root) override;
+	virtual void end_array(void*) override;
+	virtual void null() override;
+
+	virtual void key(JSON_String name) override;
+
+	virtual void parse_error(LPCXSTR err, LPCXSTR stoped) override;
 
 private:
 	JSON_Alloctor		m_Alloctor;

@@ -11,53 +11,53 @@ namespace
 	}
 }
 
-struct JSON_DebugWalker : public JSON_Walker
+struct SAX_DebugHandler : public SAX_Handler
 {
 	std::function<void(LPCXSTR err, LPCXSTR stoped)> ErrorReport;
 
-	virtual void PushNull() override
+	virtual void null() override
 	{
 		PrintTable();
 		std::cout << "null," << std::endl;
 	}
-	virtual void* PushObject(bool) override
+	virtual void* start_object(bool) override
 	{
 		PrintTable();
 		++tabCount;
 		std::cout << "{" << std::endl;
 		return nullptr;
 	}
-	virtual void* PushArray(bool) override
+	virtual void* start_array(bool) override
 	{
 		PrintTable();
 		++tabCount;
 		std::cout << "[" << std::endl;
 		return nullptr;
 	}
-	virtual void PushString(JSON_String str) override
+	virtual void string(JSON_String str) override
 	{
 		PrintTable();
 		std::cout << "\"";
 		print_string_view(std::basic_string_view<XCHAR>(str.start, str.end - str.start));
 		std::cout << "\"," << std::endl;
 	}
-	virtual void PushDouble(double value) override
+	virtual void number_float(double value) override
 	{
 		PrintTable();
 		std::cout << value << "," << std::endl;
 	}
-	virtual void PushLong(JSON_Type type, int64_t value) override
+	virtual void number_integer(JSON_Type type, int64_t value) override
 	{
 		PrintTable();
 		std::cout << value << "," << std::endl;
 	}
-	virtual void PushBoolean(bool value) override
+	virtual void boolean(bool value) override
 	{
 		PrintTable();
 		std::cout << (value ? "true" : "false") << "," << std::endl;
 	}
 
-	virtual void PushName(JSON_String name) override
+	virtual void key(JSON_String name) override
 	{
 		PrintTable();
 		std::cout << "\"";
@@ -67,20 +67,20 @@ struct JSON_DebugWalker : public JSON_Walker
 		cancelTab = true;
 	}
 
-	virtual void PopObject(void*) override
+	virtual void end_object(void*) override
 	{
 		--tabCount;
 		PrintTable();
 		std::cout << "}," << std::endl;
 	}
-	virtual void PopArray(void*) override
+	virtual void end_array(void*) override
 	{
 		--tabCount;
 		PrintTable();
 		std::cout << "]," << std::endl;
 	}
 
-	virtual void ErrorStop(LPCXSTR err, LPCXSTR stoped) override
+	virtual void parse_error(LPCXSTR err, LPCXSTR stoped) override
 	{
 		if (ErrorReport)
 			ErrorReport(err, stoped);
