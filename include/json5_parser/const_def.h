@@ -6,8 +6,12 @@
 #endif	//JSON_ENABLE_JSON5
 
 #if !defined(_WIN32) && !defined(_WIN64)
+#ifndef _aligned_malloc
 #define _aligned_malloc(size, alignment) aligned_alloc(alignment, size)
+#endif
+#ifndef _aligned_free
 #define _aligned_free(pointer) free(pointer)
+#endif
 #endif
 
 enum struct JSON_Type : uint8_t
