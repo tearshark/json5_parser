@@ -46,7 +46,7 @@ struct SAX_DebugHandler : public SAX_Handler
 		PrintTable();
 		std::cout << value << "," << std::endl;
 	}
-	virtual void number_integer(JSON_Type type, int64_t value) override
+	virtual void number_integer(JSON_Type, int64_t value) override
 	{
 		PrintTable();
 		std::cout << value << "," << std::endl;
