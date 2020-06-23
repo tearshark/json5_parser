@@ -453,9 +453,9 @@ namespace
 
 	really_inline double x_fast_path(double significand, intptr_t exp) noexcept
 	{
-		if (exp < -308)
-			return 0.0;
-		else if (exp >= 0)
+		assert(exp >= -308 && exp <= 308);
+
+		if (exp >= 0)
 			return significand * DOUBLE_E[exp];
 		else
 			return significand * DOUBLE_NE[-exp];
