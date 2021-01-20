@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "json5_parser/json5_parser.h"
+#pragma warning(disable : 4996)
 
 const int N = 100;
 

@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <cassert>
 
+#pragma warning(disable : 4996 4101)
 #include "../src/simd_double_parser.h"
 #include "../src/fast_double_parser.h"
 

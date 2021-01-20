@@ -12,6 +12,8 @@
 #  define have_rapidjson 0
 #endif
 
+#pragma warning(disable : 4996)
+
 namespace json = json5::singlebyte;
 
 const int N = 800;
