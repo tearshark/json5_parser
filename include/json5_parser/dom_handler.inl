@@ -27,9 +27,9 @@ struct alignas(32) JSON_Value
 		return (JSON_Type)(this->type & JSON_Type::LONG_MASK);
 	}
 
-	VFX_API size_t ElementsCount() const noexcept;
-	VFX_API std::basic_string<XCHAR> GetName() const;
-	VFX_API std::basic_string<XCHAR> GetString() const;
+	JSON5_API size_t ElementsCount() const noexcept;
+	JSON5_API std::basic_string<XCHAR> GetName() const;
+	JSON5_API std::basic_string<XCHAR> GetString() const;
 
 	template<class _Vistor>
 	void ForeachElements(const _Vistor& vistor) const
@@ -77,8 +77,8 @@ struct SAX_DOMHandler : public SAX_Handler
 {
 	std::function<void(LPCXSTR err, LPCXSTR stoped)> ErrorReport;
 
-	VFX_API SAX_DOMHandler(size_t nNunBatch);
-	VFX_API ~SAX_DOMHandler();
+	JSON5_API SAX_DOMHandler(size_t nNunBatch);
+	JSON5_API ~SAX_DOMHandler();
 
 	const JSON_Value* Value() const  noexcept { return m_pRootValue; }
 	size_t Count() const  noexcept { return m_Alloctor.size(); }

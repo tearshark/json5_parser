@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
-project(json5_parser)
+project(json5_parser VERSION 1.0)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+add_definitions("-DJSON5_DYNAMIC_LIBRARY_EXPORTS=1")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	set(CMAKE_CXX_FLAGS "-std=c++1z -stdlib=libc++ -fvisibility=hidden")
@@ -19,27 +24,31 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 endif()
 
+
 option(OPT_ENABLE_JSON5 "Enable json5" ON)
 if(OPT_ENABLE_JSON5)
 	set(JSON_ENABLE_JSON5 1)
 	set(JSON5_ENABLE_COMMENTS 1)
 endif()
+
 option(OPT_ENABLE_SIMD_PARSER "Enable 'simd_double_parser'" ON)
 if(OPT_ENABLE_SIMD_PARSER)
 	set(JSON_ENABLE_SIMD_PARSER 1)
 endif()
+
 option(OPT_ENABLE_DEBUG_HANDLER "Enable debug SAX handler" OFF)
 if(OPT_ENABLE_DEBUG_HANDLER)
 	set(JSON_ENABLE_DEBUG_HANDLER 1)
 endif()
+
 option(OPT_ENABLE_DOM_HANDLER "Enable default DOM handler" ON)
 if(OPT_ENABLE_DOM_HANDLER)
 	set(JSON_ENABLE_DOM_HANDLER 1)
 endif()
 
 configure_file(
-${PROJECT_SOURCE_DIR}/config.h.in
-${PROJECT_SOURCE_DIR}/include/json5_parser/config.h)
+${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+${CMAKE_CURRENT_SOURCE_DIR}/include/json5_parser/config.h)
 
 
 include_directories(
@@ -58,4 +67,4 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/json5_parser DESTINATION "includ
 install(TARGETS ${LIB_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 add_subdirectory(./benchmark)
-add_subdirectory(./test)
+add_subdirectory(./tests)
