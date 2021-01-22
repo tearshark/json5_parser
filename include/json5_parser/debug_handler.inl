@@ -34,7 +34,7 @@ struct SAX_DebugHandler : public SAX_Handler
 		std::cout << "[" << std::endl;
 		return nullptr;
 	}
-	virtual void string(JSON_String str) override
+	virtual void string(const std::basic_string_view<XCHAR> str) override
 	{
 		PrintTable();
 		std::cout << "\"";
@@ -57,7 +57,7 @@ struct SAX_DebugHandler : public SAX_Handler
 		std::cout << (value ? "true" : "false") << "," << std::endl;
 	}
 
-	virtual void key(JSON_String name) override
+	virtual void key(const std::basic_string_view<XCHAR> name) override
 	{
 		PrintTable();
 		std::cout << "\"";

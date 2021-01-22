@@ -33,7 +33,7 @@ private:
 	bool parse_number(LPCXSTR& s, LPCXSTR e) noexcept;
 	bool parse_double(LPCXSTR& s, LPCXSTR e) noexcept;
 
-	LPCXSTR _json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_String& name) noexcept;
+	LPCXSTR _json_collect_name(LPCXSTR _s, LPCXSTR _e, std::basic_string_view<XCHAR>& name) noexcept;
 	void set_error(LPCXSTR e) noexcept;
 
 	SAX_Handler*		m_pWalker;

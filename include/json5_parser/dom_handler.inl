@@ -85,7 +85,7 @@ struct SAX_DOMHandler : public SAX_Handler
 
 	virtual void number_integer(JSON_Type type, int64_t value) override;
 	virtual void number_float(double value) override;
-	virtual void string(JSON_String str) override;
+	virtual void string(const std::basic_string_view<XCHAR> str) override;
 	virtual void boolean(bool value) override;
 	virtual void* start_object(bool root) override;
 	virtual void end_object(void*) override;
@@ -93,14 +93,14 @@ struct SAX_DOMHandler : public SAX_Handler
 	virtual void end_array(void*) override;
 	virtual void null() override;
 
-	virtual void key(JSON_String name) override;
+	virtual void key(const std::basic_string_view<XCHAR> name) override;
 
 	virtual void parse_error(LPCXSTR err, LPCXSTR stoped) override;
 
 private:
-	JSON_Alloctor		m_Alloctor;
-	JSON_Value*			m_pRootValue;
-	JSON_String			m_ChildName;
+	JSON_Alloctor					m_Alloctor;
+	JSON_Value*						m_pRootValue;
+	std::basic_string_view<XCHAR>	m_ChildName;
 
 	void SetNameIf(JSON_Value* v) noexcept;
 };

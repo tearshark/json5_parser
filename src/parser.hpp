@@ -16,7 +16,7 @@ static inline  size_t _json_hex_leader(int c) noexcept { return c == 'x' || c ==
 static inline  size_t _json_bin_leader(int c) noexcept { return c == 'b' || c == 'B'; }
 
 //提取名称
-LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_String& name) noexcept
+LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, std::basic_string_view<XCHAR>& name) noexcept
 {
 	int nEndChar = 0;
 	bool bquotation = *_s == '"' JSON5_IF_ENABLE(|| *_s == '\'');
@@ -25,13 +25,13 @@ LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_String& nam
 		nEndChar = *_s;
 		_s++;
 
-		name.start = _s;
+		LPCXSTR const _start = _s;
 		while (_s < _e && *_s != nEndChar)
 		{
 			if (*_s == '\\') _s++;
 			_s++;
 		}
-		name.end = _s;
+		name = std::basic_string_view<XCHAR>{ _start, static_cast<size_t>(_s - _start) };
 
 		if (_s < _e && *_s == nEndChar) 
 			_s++;
@@ -44,9 +44,9 @@ LPCXSTR JSON_Parser::_json_collect_name(LPCXSTR _s, LPCXSTR _e, JSON_String& nam
 	else
 	{
 #if JSON_ENABLE_JSON5
-		name.start = _s;
+		LPCXSTR const _start = _s;
 		while (_s < _e && _json_is_name(*_s)) _s++;
-		name.end = _s;
+		name = std::basic_string_view<XCHAR>{ _start, static_cast<size_t>(_s - _start) };
 #else
 		set_error(X_T("keys must be quoted."));
 		return nullptr;
@@ -167,12 +167,12 @@ bool JSON_Parser::Parse(SAX_Handler* handler, LPCXSTR psz, LPCXSTR * ppszEnd/* =
 
 bool JSON_Parser::parse_pair(LPCXSTR& psz, LPCXSTR e)
 {
-	JSON_String name;
+	std::basic_string_view<XCHAR> name;
 	LPCXSTR s = _json_collect_name(psz, e, name);
 	if (s == nullptr)
 		return false;
 
-	size_t nlen = name.end - name.start;
+	size_t nlen = name.size();
 	if (nlen > (std::numeric_limits<uint16_t>::max)())
 	{
 		set_error(X_T("key length exceeds 65535."));
@@ -419,11 +419,11 @@ bool JSON_Parser::parse_value(LPCXSTR& psz, LPCXSTR e)
 __label_as_string:
 			if (_json_is_name(*s))
 			{
-				JSON_String name;
+				std::basic_string_view<XCHAR> name;
 				s = _json_collect_name(s, e, name);
 				if (s != nullptr)
 				{
-					if (name.end - name.start > (std::numeric_limits<int32_t>::max)())
+					if (name.size() > (std::numeric_limits<int32_t>::max)())
 					{
 						set_error(X_T("string length exceeds 2147483648."));
 					}
@@ -603,7 +603,7 @@ bool JSON_Parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
 
 	if (s < e && (s - psz) <= (std::numeric_limits<int32_t>::max)())
 	{
-		m_pWalker->string(JSON_String{ psz, s });
+		m_pWalker->string(std::basic_string_view<XCHAR>{ psz, static_cast<size_t>(s - psz) });
 		psz = s + 1;
 
 		return true;
@@ -742,7 +742,7 @@ bool JSON_Parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
 				if (_json_is_digit(i))
 					i = i - '0';
 				else
-					i = (i | 32) - ('a' + 10);
+					i = (i | 32) - 'a' + 10;
 
 				i64 = (i64 << 4) | i;
 			}

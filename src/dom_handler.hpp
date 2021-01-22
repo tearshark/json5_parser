@@ -74,8 +74,8 @@ inline void SAX_DOMHandler::SetNameIf(JSON_Value* v) noexcept
 {
 	if (m_pRootValue->type == JSON_Type::Object)
 	{
-		v->nlen = static_cast<uint16_t>(m_ChildName.end - m_ChildName.start);
-		v->name = m_ChildName.start;
+		v->nlen = static_cast<uint16_t>(m_ChildName.size());
+		v->name = m_ChildName.data();
 	}
 	else
 	{
@@ -148,12 +148,12 @@ void SAX_DOMHandler::null()
 	SetNameIf(v);
 }
 
-void SAX_DOMHandler::string(JSON_String str)
+void SAX_DOMHandler::string(const std::basic_string_view<XCHAR> str)
 {
 	JSON_Value* v = m_Alloctor.alloc();
 	v->type = JSON_Type::String;
-	v->slen = static_cast<uint32_t>(str.end - str.start);
-	v->str = str.start;
+	v->slen = static_cast<uint32_t>(str.size());
+	v->str = str.data();
 	SetNameIf(v);
 }
 
@@ -181,7 +181,7 @@ void SAX_DOMHandler::boolean(bool value)
 	SetNameIf(v);
 }
 
-void SAX_DOMHandler::key(JSON_String name)
+void SAX_DOMHandler::key(const std::basic_string_view<XCHAR> name)
 {
 	m_ChildName = name;
 }
