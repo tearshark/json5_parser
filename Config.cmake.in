@@ -1,0 +1,2 @@
+include(${CMAKE_CURRENT_LIST_DIR}/SelectDynamicLibrary.cmake)
+select_dynamic_library(json5 json5_parser/json5_parser.h)

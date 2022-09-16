@@ -1,12 +1,14 @@
-#include <iostream>
+﻿#include <iostream>
 #include <chrono>
 #include <memory>
 #include <stdio.h>
 #include <string.h>
+#include <variant>
+#include <map>
+#include <vector>
 
 #include "json5_parser/json5_parser.h"
-
-const int N = 100;
+#pragma warning(disable : 4996)
 
 namespace json = json5::singlebyte;
 
@@ -40,7 +42,6 @@ std::unique_ptr<char[]> load_text_from_file(const char* path, size_t& length)
 	fseek(file, 0, SEEK_SET);
 
 	char* psz = new char[length + 1];
-	const char* pszEnd = psz + length;
 	fread(psz, 1, length, file);
 	psz[length] = 0;
 	fclose(file);
@@ -69,7 +70,7 @@ std::unique_ptr<char[]> load_json_from_file(_SAX& sax, const char* path)
 			std::cout << " : error '" << err << "' at:" << std::endl << stoped << std::endl;
 		};
 
-		json::parser parser;
+		json::js_parser parser;
 
 		const char* pszEnd = psz.get() + length;
 		bool jv = parser.Parse(&sax, psz.get(), &pszEnd);
@@ -82,12 +83,12 @@ std::unique_ptr<char[]> load_json_from_file(_SAX& sax, const char* path)
 
 void json5_vistor(const char* path)
 {
-	json::dom_handler dom{ 1024 };
+	json::rapid_dom_handler dom{ 1024 };
 	auto buffer = load_json_from_file(dom, path);
 	if (buffer != nullptr && dom.Value() != nullptr)
 	{
 		dom.Value()->Vistor( 
-			[](const json::value* js, const json::value* parent)
+			[](const json::rapid_value* js, const json::rapid_value* parent)
 			{
 				if (parent != nullptr && parent->GetType() == json5::JSON_Type::Object)
 				{
@@ -126,8 +127,16 @@ namespace json5
 	void _json_print_char_flag();
 }
 
+struct js_value;
+struct js_array;
+struct js_object;
+
 int main(int argc, char* argv[])
 {
+
+    using js_variant = std::variant<int64_t, double, std::string, bool, js_object*, js_array*, std::nullptr_t, std::monostate>;
+	std::cout << sizeof(js_variant) << std::endl;
+
 	//json5::_json_print_char_flag();
 
 	for(int i = 1; i < argc; ++i)

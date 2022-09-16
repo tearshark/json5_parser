@@ -1,10 +1,18 @@
-#include <iostream>
+﻿#include <iostream>
 #include <chrono>
 #include <tuple>
 #include <stdio.h>
 
 #include "json5_parser/json5_parser.h"
+
+#if __has_include("rapidjson/document.h")
 #include "rapidjson/document.h"
+#  define have_rapidjson 1
+#else
+#  define have_rapidjson 0
+#endif
+
+#pragma warning(disable : 4996)
 
 namespace json = json5::singlebyte;
 
@@ -44,7 +52,7 @@ void benchmark_json5_parser(const char* path, Args&&... args)
 
 		for (int i = 0; i < N; ++i)
 		{
-			json::parser parser;
+			json::js_parser parser;
 			_SAX sax(std::forward<Args>(args)...);
 
 			const char* pszEnd = psz + length;
@@ -65,6 +73,7 @@ void benchmark_json5_parser(const char* path, Args&&... args)
 	}
 }
 
+#if have_rapidjson
 void benchmark_rapidjson(const char* path)
 {
 	std::cout << __FUNCTION__ << " parse file: " << path << std::endl;
@@ -94,27 +103,30 @@ void benchmark_rapidjson(const char* path)
 		delete[] psz;
 	}
 }
+#endif
 
 int main(int argc, char* argv[])
 {
 	std::cout << "dummy" << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
-		benchmark_json5_parser<json5::singlebyte::SAX_DummyHandler>(argv[i]);
+		benchmark_json5_parser<json5::singlebyte::js_dummy_handler>(argv[i]);
 	}
 
 	std::cout << std::endl;
 	std::cout << "DOM" << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
-		benchmark_json5_parser<json5::singlebyte::SAX_DOMHandler>(argv[i], 1024);
+		benchmark_json5_parser<json5::singlebyte::rapid_dom_handler>(argv[i], 1024);
 	}
 
+#if have_rapidjson
 	std::cout << std::endl;
 	for (int i = 1; i < argc; ++i)
 	{
 		benchmark_rapidjson(argv[i]);
 	}
+#endif
 
 	return 0;
 }

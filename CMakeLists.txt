@@ -1,61 +1,100 @@
 cmake_minimum_required(VERSION 3.10)
-project(json5_parser)
+project(json5_parser VERSION 1.0)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	set(CMAKE_CXX_FLAGS "-std=c++1z -stdlib=libc++ -fvisibility=hidden")
-	set(CMAKE_C_FLAGS "-std=c11 -fvisibility=hidden")
-	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-	set(CMAKE_CXX_FLAGS "-std=c++1z -stdlib=libc++ -fvisibility=hidden")
-	set(CMAKE_C_FLAGS "-std=c11 -fvisibility=hidden")
-	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	set(CMAKE_CXX_FLAGS "/std:c++17 /EHa")
-	set(CMAKE_CXX_FLAGS_RELEASE "/MD /Ox /Ob2 /Oi /Ot /Oy /GF /GS- /Gy /Gd /Zi /fp:fast /Zc:inline")
+add_definitions("-DJSON5_DYNAMIC_LIBRARY_EXPORTS=1")
+
+if(WIN32)
+	set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /W3 /WX /GF /GS- /Gy /Gd /Ox /Ob2 /Oy /Oi /Os /EHsc /Zi /fp:fast /Zc:inline")
+	set(CMAKE_CXX_FLAGS_RELEASE    "/MD /W3 /WX /GF /GS- /Gy /Gd /Ox /Ob2 /Oy /Oi /Os /EHsc /Zi /fp:fast /Zc:inline")
 	set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "/LTCG")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "-std=c++1z -fvisibility=hidden")
-	set(CMAKE_C_FLAGS "-std=c11 -fvisibility=hidden")
-	set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 endif()
 
-option(OPT_ENABLE_JSON5 "Enable json5" ON)
-if(OPT_ENABLE_JSON5)
+
+option(JSON5_ENABLE_JSON5 "Enable json5" ON)
+if(JSON5_ENABLE_JSON5)
 	set(JSON_ENABLE_JSON5 1)
 	set(JSON5_ENABLE_COMMENTS 1)
 endif()
-option(OPT_ENABLE_SIMD_PARSER "Enable 'simd_double_parser'" ON)
-if(OPT_ENABLE_SIMD_PARSER)
+
+option(JSON5_ENABLE_SIMD_PARSER "Enable 'simd_double_parser'" OFF)
+if(JSON5_ENABLE_SIMD_PARSER)
 	set(JSON_ENABLE_SIMD_PARSER 1)
 endif()
-option(OPT_ENABLE_DEBUG_HANDLER "Enable debug SAX handler" OFF)
-if(OPT_ENABLE_DEBUG_HANDLER)
+
+option(JSON5_ENABLE_DEBUG_HANDLER "Enable debug SAX handler" OFF)
+if(JSON5_ENABLE_DEBUG_HANDLER)
 	set(JSON_ENABLE_DEBUG_HANDLER 1)
 endif()
-option(OPT_ENABLE_DOM_HANDLER "Enable default DOM handler" ON)
-if(OPT_ENABLE_DOM_HANDLER)
-	set(JSON_ENABLE_DOM_HANDLER 1)
+
+option(JSON5_ENABLE_RAPID_HANDLER "Enable default DOM handler" ON)
+if(JSON5_ENABLE_RAPID_HANDLER)
+	set(JSON_ENABLE_RAPID_HANDLER 1)
+endif()
+
+option(JSON5_ENABLE_GRISU3 "Enable default DOM handler" ON)
+if(JSON5_ENABLE_GRISU3)
+	set(JSON_ENABLE_GRISU3 1)
 endif()
 
 configure_file(
-${PROJECT_SOURCE_DIR}/config.h.in
-${PROJECT_SOURCE_DIR}/include/json5_parser/config.h)
+${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+${CMAKE_CURRENT_SOURCE_DIR}/include/json5_parser/config.h)
 
+set(SOURCE_FILES
+	${CMAKE_CURRENT_SOURCE_DIR}/src/json5_parser/json5_parser.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/json5/json5.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/json5/grisu3.cpp
+)
 
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 include_directories(
-${PROJECT_SOURCE_DIR}/include
+	${CMAKE_CURRENT_SOURCE_DIR}/src
+	${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include
+	${CMAKE_CURRENT_SOURCE_DIR}/nlohmann_json/include
 )
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(${PROJECT_NAME} PRIVATE UTF)
+if(WIN32)
+	set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "Acl.${PROJECT_NAME}")
+else()
+	set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "libAcl.${PROJECT_NAME}")
+endif()
 
-set(SRC 
-"src/json5_parser.cpp"
-)
+# ----------------------------------- tests -----------------------------------
+if(CMAKE_ENABLE_UNIT_TEST)
+	set(TESTS_SIMD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_simd_parser.cpp)
+	add_executable(testJson5_Simd ${TESTS_SIMD_SRC})
+	target_link_libraries(testJson5_Simd PUBLIC ${PROJECT_NAME})
+	target_include_directories(testJson5_Simd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-set(LIB_NAME json5_parser)
-add_library(${LIB_NAME} STATIC ${SRC})
+	set(TESTS_VISTOR_SRC ${CMAKE_CURRENT_SOURCE_DIR}/tests/vistor.cpp)
+	add_executable(testJson5_Vistor ${TESTS_VISTOR_SRC})
+	target_link_libraries(testJson5_Vistor PUBLIC ${PROJECT_NAME})
+	target_include_directories(testJson5_Vistor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/json5_parser DESTINATION "include")
-install(TARGETS ${LIB_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+	set(TESTS_WVISTOR_SRC ${CMAKE_CURRENT_SOURCE_DIR}/tests/wvistor.cpp)
+	add_executable(testJson5_WVisitor ${TESTS_WVISTOR_SRC})
+	target_link_libraries(testJson5_WVisitor PUBLIC ${PROJECT_NAME})
+	target_include_directories(testJson5_WVisitor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_subdirectory(./benchmark)
-add_subdirectory(./test)
+	set(TESTS_JSON5_SRC ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_json_v2.cpp)
+	add_executable(testJson5 ${TESTS_JSON5_SRC})
+	target_link_libraries(testJson5 PUBLIC ${PROJECT_NAME})
+	target_include_directories(testJson5 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+endif()
+
+# ---------------------------------- benchmark ----------------------------------
+if(CMAKE_ENABLE_UNIT_TEST)
+	set(TESTS_BENCHMARK_SRC ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/benchmark_parsr.cpp)
+	add_executable(benchmarkJson5 ${TESTS_BENCHMARK_SRC})
+	target_link_libraries(benchmarkJson5 PUBLIC ${PROJECT_NAME})
+	target_include_directories(benchmarkJson5 PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/include
+		${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include
+		)
+endif()
+
+# ------------------------------- install script ------------------------------
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/install.cmake)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/json5_parser DESTINATION include)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/json5 DESTINATION include)

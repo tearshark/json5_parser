@@ -7,7 +7,7 @@
 
 #include "json5_parser/json5_parser.h"
 
-const int N = 100;
+#pragma warning(disable : 4996)
 
 namespace json = json5::unicode;
 
@@ -40,7 +40,6 @@ std::unique_ptr<wchar_t[]> load_text_from_file(const char* path, size_t& wlength
 	fseek(file, 0, SEEK_SET);
 
 	char* psz = new char[length + 1];
-	const char* pszEnd = psz + length;
 	fread(psz, 1, length, file);
 	psz[length] = 0;
 	fclose(file);
@@ -48,7 +47,7 @@ std::unique_ptr<wchar_t[]> load_text_from_file(const char* path, size_t& wlength
 	setlocale(LC_ALL, "en_US.UTF-8:en-US");
 	wlength = mbstowcs(nullptr, psz, length);
 	wchar_t* pwsz = new wchar_t[wlength + 1];
-	wlength = mbstowcs(pwsz, psz, length);
+	(void)mbstowcs(pwsz, psz, length);
 	pwsz[wlength] = 0;
 	delete[] psz;
 
@@ -71,7 +70,7 @@ std::unique_ptr<wchar_t[]> load_json_from_file(_SAX& sax, const char* path)
 			std::wcout << L" : error '" << err << L"' at:" << std::endl << stoped << std::endl;
 		};
 
-		json::parser parser;
+		json::js_parser parser;
 
 		const wchar_t* pszEnd = psz.get() + length;
 		bool jv = parser.Parse(&sax, psz.get(), &pszEnd);
@@ -84,12 +83,12 @@ std::unique_ptr<wchar_t[]> load_json_from_file(_SAX& sax, const char* path)
 
 void json5_vistor(const char* path)
 {
-	json::dom_handler sax{ 1024 };
+	json::rapid_dom_handler sax{ 1024 };
 	auto buffer = load_json_from_file(sax, path);
 	if (buffer != nullptr && sax.Value() != nullptr)
 	{
 		sax.Value()->Vistor(
-			[](const json::value* js, const json::value* parent)
+			[](const json::rapid_value* js, const json::rapid_value* parent)
 			{
 				if (parent != nullptr && parent->GetType() == json5::JSON_Type::Object)
 				{

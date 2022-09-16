@@ -1,648 +1,659 @@
-
+ï»¿
 namespace
 {
 /*
-	#define _MM_SHUFFLE8(fp7, fp6, fp5, fp4, fp3, fp2, fp1, fp0) \
-		(((fp7) << 21) | ((fp6) << 18) | ((fp5) << 15) | ((fp4) << 12)) | \
-		(((fp3) << 9) | ((fp2) << 6) | ((fp1) << 3) | ((fp0)))
+    #define _MM_SHUFFLE8(fp7, fp6, fp5, fp4, fp3, fp2, fp1, fp0) \
+        (((fp7) << 21) | ((fp6) << 18) | ((fp5) << 15) | ((fp4) << 12)) | \
+        (((fp3) << 9) | ((fp2) << 6) | ((fp1) << 3) | ((fp0)))
 
-	__m128i _mm_shuffle_epi16(__m128i _A, int _Imm)
-	{
-		_Imm &= 0xffffff;
-		char m01 = (_Imm >> 0) & 0x7, m03 = (_Imm >> 3) & 0x7;
-		char m05 = (_Imm >> 6) & 0x7, m07 = (_Imm >> 9) & 0x7;
-		char m09 = (_Imm >> 12) & 0x7, m11 = (_Imm >> 15) & 0x7;
-		char m13 = (_Imm >> 18) & 0x7, m15 = (_Imm >> 21) & 0x7;
-		m01 <<= 1; m03 <<= 1; m05 <<= 1; m07 <<= 1;
-		m09 <<= 1; m11 <<= 1; m13 <<= 1; m15 <<= 1;
-		char m00 = m01 + 1, m02 = m03 + 1, m04 = m05 + 1, m06 = m07 + 1;
-		char m08 = m09 + 1, m10 = m11 + 1, m12 = m13 + 1, m14 = m15 + 1;
+    __m128i _mm_shuffle_epi16(__m128i _A, int _Imm)
+    {
+        _Imm &= 0xffffff;
+        char m01 = (_Imm >> 0) & 0x7, m03 = (_Imm >> 3) & 0x7;
+        char m05 = (_Imm >> 6) & 0x7, m07 = (_Imm >> 9) & 0x7;
+        char m09 = (_Imm >> 12) & 0x7, m11 = (_Imm >> 15) & 0x7;
+        char m13 = (_Imm >> 18) & 0x7, m15 = (_Imm >> 21) & 0x7;
+        m01 <<= 1; m03 <<= 1; m05 <<= 1; m07 <<= 1;
+        m09 <<= 1; m11 <<= 1; m13 <<= 1; m15 <<= 1;
+        char m00 = m01 + 1, m02 = m03 + 1, m04 = m05 + 1, m06 = m07 + 1;
+        char m08 = m09 + 1, m10 = m11 + 1, m12 = m13 + 1, m14 = m15 + 1;
 
-		//__m128i vMask = _mm_set_epi8(m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11, m12, m13, m14, m15);
-		__m128i vMask = _mm_set_epi8(m14, m15, m12, m13, m10, m11, m08, m09, m06, m07, m04, m05, m02, m03, m00, m01);
-		return _mm_shuffle_epi8(_A, vMask);
-	}
+        //__m128i vMask = _mm_set_epi8(m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11, m12, m13, m14, m15);
+        __m128i vMask = _mm_set_epi8(m14, m15, m12, m13, m10, m11, m08, m09, m06, m07, m04, m05, m02, m03, m00, m01);
+        return _mm_shuffle_epi8(_A, vMask);
+    }
 */
 
-	//aºÍb¶¼ÊÇ4¸ö16Î»µÄÕûÊı(ºöÂÔ¸ß64Î»)
-	//r[0..7] = a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]
-	really_inline __m128i x_mm_dotp_i16x4(__m128i i16x8_a, __m128i i16x8_b) noexcept
-	{
-		__m128i i32x4 = _mm_madd_epi16(i16x8_a, i16x8_b);
-		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
-		return i32x4;
-	}
+    //aå’Œbéƒ½æ˜¯4ä¸ª16ä½çš„æ•´æ•°(å¿½ç•¥é«˜64ä½)
+    //r[0..7] = a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]
+    really_inline __m128i x_mm_dotp_i16x4(__m128i i16x8_a, __m128i i16x8_b) noexcept
+    {
+        __m128i i32x4 = _mm_madd_epi16(i16x8_a, i16x8_b);
+        i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
+        return i32x4;
+    }
 
-	//aºÍb¶¼ÊÇ8¸ö16Î»µÄÕûÊı
-	//r[0..7] = a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]+a[4]*b[4]+a[5]*b[5]+a[6]*b[6]+a[7]*b[7]
-	really_inline __m128i x_mm_dotp_i16x8(__m128i i16x8_a, __m128i i16x8_b) noexcept
-	{
-		__m128i i32x4 = _mm_madd_epi16(i16x8_a, i16x8_b);
-		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
-		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(0, 1, 2, 3)));
-		return i32x4;
-	}
+    //aå’Œbéƒ½æ˜¯8ä¸ª16ä½çš„æ•´æ•°
+    //r[0..7] = a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]+a[4]*b[4]+a[5]*b[5]+a[6]*b[6]+a[7]*b[7]
+    really_inline __m128i x_mm_dotp_i16x8(__m128i i16x8_a, __m128i i16x8_b) noexcept
+    {
+        __m128i i32x4 = _mm_madd_epi16(i16x8_a, i16x8_b);
+        i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
+        i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(0, 1, 2, 3)));
+        return i32x4;
+    }
 
-	//½«8¸ö16Î»×ÖÄ¸£¬×ª»¯³ÉÒ»¸ö×î´ó99999999µÄÕûÊı
-	//r = ((i16x8[0]-'0')*1 + (i16x8[1]-'0')*10 + (i16x8[2]-'0')*100 + (i16x8[3]-'0')*1000)+
-	//    ((i16x8[4]-'0')*1 + (i16x8[5]-'0')*10 + (i16x8[6]-'0')*100 + (i16x8[7]-'0')*1000)*1000
-	really_inline int x_mm_cvt_i16x8_i32(__m128i i16x8) noexcept
-	{
-		//»ñµÃ8¸ö16Î»µÄÊı×Ö£¨²»ÔÙÊÇ×ÖÄ¸£©
-		i16x8 = _mm_sub_epi16(i16x8, _mm_set1_epi16('0'));
+    //å°†8ä¸ª16ä½å­—æ¯ï¼Œè½¬åŒ–æˆä¸€ä¸ªæœ€å¤§99999999çš„æ•´æ•°
+    //r = ((i16x8[0]-'0')*1 + (i16x8[1]-'0')*10 + (i16x8[2]-'0')*100 + (i16x8[3]-'0')*1000)+
+    //    ((i16x8[4]-'0')*1 + (i16x8[5]-'0')*10 + (i16x8[6]-'0')*100 + (i16x8[7]-'0')*1000)*1000
+    really_inline int x_mm_cvt_i16x8_i32(__m128i i16x8) noexcept
+    {
+        //è·å¾—8ä¸ª16ä½çš„æ•°å­—ï¼ˆä¸å†æ˜¯å­—æ¯ï¼‰
+        i16x8 = _mm_sub_epi16(i16x8, _mm_set1_epi16('0'));
 
-		//ÓÉÓÚ·¶Î§ÏŞÖÆ£¬Ö»ÄÜ×ö³ÉµÍ4¸öÊı×Ö×ª³ÉÒ»¸öÊı£¬¸ß4¸öÊı×Ö×ª³ÉÒ»¸öÊı
-		__m128i i32x4 = _mm_madd_epi16(i16x8, _mm_set_epi16(1000, 100, 10, 1, 1000, 100, 10, 1));
-		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
-		//ÏÖÔÚ£¬i32x4[0]=i32x4[1]=Ê®½øÖÆµÄ¸ß4Î»Êı×Ö£»i32x4[2]=i32x4[3]=Ê®½øÖÆµÄµÍ4Î»Êı×Ö
-		
-		//²¹ÉÏÖ®Ç°Ê®½øÖÆµÄ¸ß4Î»Êı×ÖÉÙ³ËµÄ10000
-		i32x4 = _mm_mul_epu32(i32x4, _mm_set_epi32(0, 10000, 0, 1));
-		//½«Ê®½øÖÆµÄ¸ß4Î»*10000ºóµÄ½á¹û£¬¼ÓÉÏµÍ4Î»
-		i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(3, 0, 1, 2)));
+        //ç”±äºèŒƒå›´é™åˆ¶ï¼Œåªèƒ½åšæˆä½4ä¸ªæ•°å­—è½¬æˆä¸€ä¸ªæ•°ï¼Œé«˜4ä¸ªæ•°å­—è½¬æˆä¸€ä¸ªæ•°
+        __m128i i32x4 = _mm_madd_epi16(i16x8, _mm_set_epi16(1000, 100, 10, 1, 1000, 100, 10, 1));
+        i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(2, 3, 0, 1)));
+        //ç°åœ¨ï¼Œi32x4[0]=i32x4[1]=åè¿›åˆ¶çš„é«˜4ä½æ•°å­—ï¼›i32x4[2]=i32x4[3]=åè¿›åˆ¶çš„ä½4ä½æ•°å­—
 
-		//½á¹ûÔÚµÍ64Î»Àï´æ·Ã¡£ÓÉÓÚ·¶Î§Ã»³¬¹ı32Î»£¬¹ÊÖ±½ÓÈ¡µÍ32Î»¾ÍÊÇ½á¹û
-		int val = _mm_cvtsi128_si32(i32x4);
-		return val;
-	}
+        //è¡¥ä¸Šä¹‹å‰åè¿›åˆ¶çš„é«˜4ä½æ•°å­—å°‘ä¹˜çš„10000
+        i32x4 = _mm_mul_epu32(i32x4, _mm_set_epi32(0, 10000, 0, 1));
+        //å°†åè¿›åˆ¶çš„é«˜4ä½*10000åçš„ç»“æœï¼ŒåŠ ä¸Šä½4ä½
+        i32x4 = _mm_add_epi32(i32x4, _mm_shuffle_epi32(i32x4, _MM_SHUFFLE(3, 0, 1, 2)));
 
-	//½«4¸ö16Î»×ÖÄ¸£¬×ª»¯³ÉÒ»¸ö×î´ó9999µÄÕûÊı
-	//r = ((i16x8[0]-'0')*1 + (i16x8[1]-'0')*10 + (i16x8[2]-'0')*100 + (i16x8[3]-'0')*1000)
-	really_inline int x_mm_cvt_i16x4_i32(__m128i i16x4) noexcept
-	{
-		//»ñµÃ8¸ö16Î»µÄÊı×Ö£¨²»ÔÙÊÇ×ÖÄ¸£©
-		i16x4 = _mm_sub_epi16(i16x4, _mm_set1_epi16('0'));
-		__m128i i32x4 = x_mm_dotp_i16x4(i16x4, _mm_set_epi16(0, 0, 0, 0, 1000, 100, 10, 1));
-		int val = _mm_cvtsi128_si32(i32x4);
-		return val;
-	}
+        //ç»“æœåœ¨ä½64ä½é‡Œå­˜è®¿ã€‚ç”±äºèŒƒå›´æ²¡è¶…è¿‡32ä½ï¼Œæ•…ç›´æ¥å–ä½32ä½å°±æ˜¯ç»“æœ
+        int val = _mm_cvtsi128_si32(i32x4);
+        return val;
+    }
 
-	//ÅĞ¶ÏxÊÇ²»ÊÇÒ»¸öÊı×Ö×ÖÄ¸([0,9]Ö®¼äµÄ×ÖÄ¸)
+    //å°†4ä¸ª16ä½å­—æ¯ï¼Œè½¬åŒ–æˆä¸€ä¸ªæœ€å¤§9999çš„æ•´æ•°
+    //r = ((i16x8[0]-'0')*1 + (i16x8[1]-'0')*10 + (i16x8[2]-'0')*100 + (i16x8[3]-'0')*1000)
+    really_inline int x_mm_cvt_i16x4_i32(__m128i i16x4) noexcept
+    {
+        //è·å¾—8ä¸ª16ä½çš„æ•°å­—ï¼ˆä¸å†æ˜¯å­—æ¯ï¼‰
+        i16x4 = _mm_sub_epi16(i16x4, _mm_set1_epi16('0'));
+        __m128i i32x4 = x_mm_dotp_i16x4(i16x4, _mm_set_epi16(0, 0, 0, 0, 1000, 100, 10, 1));
+        int val = _mm_cvtsi128_si32(i32x4);
+        return val;
+    }
+
+    //åˆ¤æ–­xæ˜¯ä¸æ˜¯ä¸€ä¸ªæ•°å­—å­—æ¯([0,9]ä¹‹é—´çš„å­—æ¯)
 #ifndef x_is_digit
-	template<class _Ch>
-	really_inline bool x_is_digit(_Ch x) noexcept
-	{
-		return (x >= '0' && x <= '9');
-		//return ((x - '0') | ('9' - x)) >= 0;
-	}
+    template<class _Ch>
+    really_inline bool x_is_digit(_Ch x) noexcept
+    {
+        return (x >= '0' && x <= '9');
+        //return ((x - '0') | ('9' - x)) >= 0;
+    }
 #endif
 
 
 
-	//wchar_tÔÚ²»Í¬µÄÆ½Ì¨ÉÏ£¬ÊÇ²»Í¬µÄ¡£16Î»»¹ÊÇ32Î»£¬Æä»ã±àÏ¸½Ú»á²»Í¬
-	//¹Ê²»ÄÜ¼òµ¥µÄÕë¶Ôchar/wchar_t½øĞĞÌØ»¯
-	template<size_t _CharSize>
-	struct x_convert_char_selector;
+    //wchar_tåœ¨ä¸åŒçš„å¹³å°ä¸Šï¼Œæ˜¯ä¸åŒçš„ã€‚16ä½è¿˜æ˜¯32ä½ï¼Œå…¶æ±‡ç¼–ç»†èŠ‚ä¼šä¸åŒ
+    //æ•…ä¸èƒ½ç®€å•çš„é’ˆå¯¹char/wchar_tè¿›è¡Œç‰¹åŒ–
+    template<size_t _CharSize>
+    struct x_convert_char_selector;
 
-	template<>
-	struct x_convert_char_selector<2>
-	{
-		using type = char16_t;
+    template<>
+    struct x_convert_char_selector<2>
+    {
+        using type = char16_t;
 
-		static really_inline __m128i load_xdigitx4(const type* s) noexcept
-		{
+        static really_inline __m128i load_xdigitx4(const type* s) noexcept
+        {
 #if defined(_M_X64) || defined(__x86_64__)
-			return _mm_cvtsi64_si128(*(int64_t*)s);
+            return _mm_cvtsi64_si128(*(int64_t*)s);
 #elif defined(_M_IX86) || defined(__i386__)
-			const int32_t* v = (const int32_t*)(s);
-			return _mm_set_epi32(0, 0, v[1], v[0]);
+            const int32_t* v = (const int32_t*)(s);
+            return _mm_set_epi32(0, 0, v[1], v[0]);
 #else
 #error "Unknown platform"
 #endif
-		}
+        }
 
-		//¼ÓÔØ8¸öÊı×Ö×ÖÄ¸
-		//·µ»Øi16x8µÄ128Î»Öµ
-		static really_inline __m128i load_xdigitx8(const type* s) noexcept
-		{
-			return _mm_load_si128((const __m128i*)s);
-		}
+        //åŠ è½½8ä¸ªæ•°å­—å­—æ¯
+        //è¿”å›i16x8çš„128ä½å€¼
+        static really_inline __m128i load_xdigitx8(const type* s) noexcept
+        {
+            return _mm_load_si128((const __m128i*)s);
+        }
 
-		//i16x4ÊÇ8¸ö16Î»×ÖÄ¸
-		//»ñµÃ i16x4[0], i16x4[1], i16x4[2], i16x4[3] ËÄ¸öÊıÊÇ²»ÊÇ¶¼ÊÇ['0', '9']Ö®¼äµÄÊı×Ö×ÖÄ¸
-		//ºöÂÔi8x4[4...7]
-		//ÓÃÓÚ´¦Àíunicode 16bits
-		//r.bits[0,1] = is_digit(i16x4[0])
-		//r.bits[2,3] = is_digit(i16x4[1])
-		//r.bits[4,5] = is_digit(i16x4[2])
-		//r.bits[6,7] = is_digit(i16x4[3])
-		static really_inline uint32_t digit_mask(__m128i i16x4) noexcept
-		{
-			__m128i i16x8_gt = _mm_cmpgt_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '0' - 1, '0' - 1, '0' - 1, '0' - 1));
-			__m128i i16x8_lt = _mm_cmplt_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '9' + 1, '9' + 1, '9' + 1, '9' + 1));
-			__m128i i16x8_and = _mm_and_si128(i16x8_gt, i16x8_lt);
-			uint32_t i8x4_mask = _mm_movemask_epi8(i16x8_and);
-			return i8x4_mask;
-		}
-		static really_inline uint32_t digit_zero_mask(__m128i i16x4) noexcept
-		{
-			__m128i i16x8_eq = _mm_cmpeq_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '0', '0', '0', '0'));
-			int i8x4_mask = _mm_movemask_epi8(i16x8_eq);
-			return i8x4_mask;
-		}
+        //i16x4æ˜¯8ä¸ª16ä½å­—æ¯
+        //è·å¾— i16x4[0], i16x4[1], i16x4[2], i16x4[3] å››ä¸ªæ•°æ˜¯ä¸æ˜¯éƒ½æ˜¯['0', '9']ä¹‹é—´çš„æ•°å­—å­—æ¯
+        //å¿½ç•¥i8x4[4...7]
+        //ç”¨äºå¤„ç†unicode 16bits
+        //r.bits[0,1] = is_digit(i16x4[0])
+        //r.bits[2,3] = is_digit(i16x4[1])
+        //r.bits[4,5] = is_digit(i16x4[2])
+        //r.bits[6,7] = is_digit(i16x4[3])
+        static really_inline uint32_t digit_mask(__m128i i16x4) noexcept
+        {
+            __m128i i16x8_gt = _mm_cmpgt_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '0' - 1, '0' - 1, '0' - 1, '0' - 1));
+            __m128i i16x8_lt = _mm_cmplt_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '9' + 1, '9' + 1, '9' + 1, '9' + 1));
+            __m128i i16x8_and = _mm_and_si128(i16x8_gt, i16x8_lt);
+            uint32_t i8x4_mask = _mm_movemask_epi8(i16x8_and);
+            return i8x4_mask;
+        }
+        static really_inline uint32_t digit_zero_mask(__m128i i16x4) noexcept
+        {
+            __m128i i16x8_eq = _mm_cmpeq_epi16(i16x4, _mm_set_epi16(0, 0, 0, 0, '0', '0', '0', '0'));
+            int i8x4_mask = _mm_movemask_epi8(i16x8_eq);
+            return i8x4_mask;
+        }
 
-		//½«4¸ö16Î»×ÖÄ¸(ºöÂÔ¸ß4¸ö16Î»×ÖÄ¸£©£¬×ª»¯³ÉÒ»¸ö×î´ó9999µÄÕûÊı
-		//i16x4_mulÊÇ4¸ö16Î»ÕûÊı(¸ß4¸ö16Î»Êı×Ö±ØĞëÉè¶¨Îª0)£¬¸ù¾İĞèÒªÉè¶¨µÄ×ª»¯¶àÉÙ¸ö×ÖÄ¸:
-		//	4×ÖÄ¸ : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
-		//	3×ÖÄ¸ : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
-		//	2×ÖÄ¸ : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
-		//	1×ÖÄ¸ : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
-		//r = (i16x4[0]-'0')*i16x4_mul[0] + (i16x4[1]-'0')*i16x4_mul[1] + (i16x4[2]-'0')*i16x4_mul[2] + (i16x4[3]-'0')*i16x4_mul[3]
-		static really_inline uint32_t cvt_xcharx4_i32(__m128i i16x4, __m128i i16x4_mul) noexcept
-		{
-			i16x4 = _mm_sub_epi16(i16x4, _mm_set1_epi16('0'));
+        //å°†4ä¸ª16ä½å­—æ¯(å¿½ç•¥é«˜4ä¸ª16ä½å­—æ¯ï¼‰ï¼Œè½¬åŒ–æˆä¸€ä¸ªæœ€å¤§9999çš„æ•´æ•°
+        //i16x4_mulæ˜¯4ä¸ª16ä½æ•´æ•°(é«˜4ä¸ª16ä½æ•°å­—å¿…é¡»è®¾å®šä¸º0)ï¼Œæ ¹æ®éœ€è¦è®¾å®šçš„è½¬åŒ–å¤šå°‘ä¸ªå­—æ¯:
+        //	4å­—æ¯ : _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000)
+        //	3å­—æ¯ : _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100)
+        //	2å­—æ¯ : _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10)
+        //	1å­—æ¯ : _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1)
+        //r = (i16x4[0]-'0')*i16x4_mul[0] + (i16x4[1]-'0')*i16x4_mul[1] + (i16x4[2]-'0')*i16x4_mul[2] + (i16x4[3]-'0')*i16x4_mul[3]
+        static really_inline uint32_t cvt_xcharx4_i32(__m128i i16x4, __m128i i16x4_mul) noexcept
+        {
+            i16x4 = _mm_sub_epi16(i16x4, _mm_set1_epi16('0'));
 
-			__m128i i32x4 = x_mm_dotp_i16x4(i16x4, i16x4_mul);
-			uint32_t val = _mm_cvtsi128_si32(i32x4);
-			return val;
-		}
+            __m128i i32x4 = x_mm_dotp_i16x4(i16x4, i16x4_mul);
+            uint32_t val = _mm_cvtsi128_si32(i32x4);
+            return val;
+        }
 
-		enum
-		{
-			MASK4 = 0xff,
-			MASK3 = 0x3f,
-			MASK2 = 0x0f,
-			MASK1 = 0x03,
-		};
-	};
+        enum
+        {
+            MASK4 = 0xff,
+            MASK3 = 0x3f,
+            MASK2 = 0x0f,
+            MASK1 = 0x03,
+        };
+    };
 
-	template<>
-	struct x_convert_char_selector<1>
-	{
-		using type = char;
+    template<>
+    struct x_convert_char_selector<1>
+    {
+        using type = char;
 
-		static really_inline __m128i load_xdigitx4(const type* s) noexcept
-		{
-			__m128i i8x8 = _mm_cvtsi32_si128(*(int*)s);
-			return _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
-		}
+        static really_inline __m128i load_xdigitx4(const type* s) noexcept
+        {
+            __m128i i8x8 = _mm_cvtsi32_si128(*(int*)s);
+            return _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
+        }
 
-		//¼ÓÔØ8¸öÊı×Ö×ÖÄ¸
-		//·µ»Øi16x8µÄ128Î»Öµ
-		static really_inline __m128i load_xdigitx8(const type* s) noexcept
-		{
-			__m128i i8x8;
+        //åŠ è½½8ä¸ªæ•°å­—å­—æ¯
+        //è¿”å›i16x8çš„128ä½å€¼
+        static really_inline __m128i load_xdigitx8(const type* s) noexcept
+        {
+            __m128i i8x8;
 #if defined(_M_X64) || defined(__x86_64__)
-			i8x8 = _mm_cvtsi64_si128(*(int64_t*)s);
+            i8x8 = _mm_cvtsi64_si128(*(int64_t*)s);
 #elif defined(_M_IX86) || defined(__i386__)
-			const int32_t* v = (const int32_t*)(s);
-			i8x8 = _mm_set_epi32(0, 0, v[1], v[0]);
+            const int32_t* v = (const int32_t*)(s);
+            i8x8 = _mm_set_epi32(0, 0, v[1], v[0]);
 #else
 #error "Unknown platform"
 #endif
-			return _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
-		}
-	};
+            return _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
+        }
+    };
 
-	template<>
-	struct x_convert_char_selector<4>
-	{
-		using type = char32_t;
+    template<>
+    struct x_convert_char_selector<4>
+    {
+        using type = char32_t;
 
-		static really_inline __m128i load_xdigitx4(const type* s) noexcept
-		{
-			__m128i lo = _mm_load_si128((__m128i*)s);
-			return _mm_packs_epi32(lo, _mm_setzero_si128());
-		}
+        static really_inline __m128i load_xdigitx4(const type* s) noexcept
+        {
+            __m128i lo = _mm_load_si128((__m128i*)s);
+            return _mm_packs_epi32(lo, _mm_setzero_si128());
+        }
 
-		static really_inline __m128i load_xdigitx8(const type* s) noexcept
-		{
-			__m128i lo = _mm_load_si128((__m128i*)s);
-			__m128i hi = _mm_load_si128(((__m128i*)s) + 1);
-			return _mm_packs_epi32(lo, hi);
-		}
-	};
+        static really_inline __m128i load_xdigitx8(const type* s) noexcept
+        {
+            __m128i lo = _mm_load_si128((__m128i*)s);
+            __m128i hi = _mm_load_si128(((__m128i*)s) + 1);
+            return _mm_packs_epi32(lo, hi);
+        }
+    };
 
-	//½«8¸öÊı×Ö×Ö·û×ª»¯Î»ÕûÊı¡£Èç"12345678"×ª³ÉÕûÊı12345678¡£
-	template<class type>
-	really_inline int64_t x_mm_convert_digitx8_long(int64_t result, const type* s) noexcept
-	{
-		using traits_t = x_convert_char_selector<sizeof(type)>;
-	
-		__m128i i16x8 = traits_t::load_xdigitx8((typename traits_t::type*)s);
-		int val = x_mm_cvt_i16x8_i32(i16x8);
-		return val;
-	}
+    //å°†8ä¸ªæ•°å­—å­—ç¬¦è½¬åŒ–ä½æ•´æ•°ã€‚å¦‚"12345678"è½¬æˆæ•´æ•°12345678ã€‚
+    template<class type>
+    really_inline int64_t x_mm_convert_digitx8_long(int64_t result, const type* s) noexcept
+    {
+        using traits_t = x_convert_char_selector<sizeof(type)>;
 
-	//½«4¸öÊı×Ö×Ö·û×ª»¯Î»ÕûÊı¡£Èç"1234"×ª³ÉÕûÊı1234¡£
-	template<class type>
-	really_inline int64_t x_mm_convert_digitx4_long(int64_t result, const type* s) noexcept
-	{
-		using traits_t = x_convert_char_selector<sizeof(type)>;
+        __m128i i16x8 = traits_t::load_xdigitx8((typename traits_t::type*)s);
+        int val = x_mm_cvt_i16x8_i32(i16x8);
+        return val;
+    }
 
-		__m128i i16x8 = traits_t::load_xdigitx4((typename traits_t::type*)s);
-		int val = x_mm_cvt_i16x4_i32(i16x8);
-		return val;
-	}
+    //å°†4ä¸ªæ•°å­—å­—ç¬¦è½¬åŒ–ä½æ•´æ•°ã€‚å¦‚"1234"è½¬æˆæ•´æ•°1234ã€‚
+    template<class type>
+    really_inline int64_t x_mm_convert_digitx4_long(int64_t result, const type* s) noexcept
+    {
+        using traits_t = x_convert_char_selector<sizeof(type)>;
 
-	really_inline int64_t x_mm_convert_digit8x8_long(uint64_t u8x8, intptr_t exp) noexcept
-	{
-		__m128i i8x8;
+        __m128i i16x8 = traits_t::load_xdigitx4((typename traits_t::type*)s);
+        int val = x_mm_cvt_i16x4_i32(i16x8);
+        return val;
+    }
+
+    really_inline int64_t x_mm_convert_digit8x8_long(uint64_t u8x8, intptr_t exp) noexcept
+    {
+        __m128i i8x8;
 #if defined(_M_X64) || defined(__x86_64__)
-		i8x8 = _mm_cvtsi64_si128(u8x8);
+        i8x8 = _mm_cvtsi64_si128(u8x8);
 #elif defined(_M_IX86) || defined(__i386__)
-		i8x8 = _mm_set_epi32(0, 0, static_cast<uint32_t>(u8x8>>32), static_cast<uint32_t>(u8x8));
+        i8x8 = _mm_set_epi32(0, 0, static_cast<uint32_t>(u8x8 >> 32), static_cast<uint32_t>(u8x8));
 #else
 #error "Unknown platform"
 #endif
-		__m128i i16x8 = _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
-		if (exp <= 4)
-			return x_mm_cvt_i16x4_i32(i16x8);
-		else
-			return x_mm_cvt_i16x8_i32(i16x8);
-	}
+        __m128i i16x8 = _mm_unpacklo_epi8(i8x8, _mm_setzero_si128());
+        if (exp <= 4)
+            return x_mm_cvt_i16x4_i32(i16x8);
+        else
+            return x_mm_cvt_i16x8_i32(i16x8);
+    }
 
-	//½«×Ö·û´®×ª»¯ÎªÕûÊı
-	//µ±Óöµ½·ÇÊı×Ö×Ö·û£¬»òÕß³¬¹ıint64_t¿É±í´ïµÄ·¶Î§£¬ÔòÍ£Ö¹
-	//psz:½«Òª×ª»»µÄ×Ö·û´®
-	//overflow:Êä³ö²ÎÊı£¬Èç¹ûÒç³öÔòÌîÎªtrue£»·ñÔò£¬²»»á¸Ä±äoverflowµÄÖµ
-	//·µ»ØÖµ:ÒÑ¾­×ª»»µÄÕûÊı
-	template<class type>
-	really_inline uint64_t x_mm_convert_string_long(uint64_t result, const type*& psz, const type* e, bool& overflow) noexcept
-	{
-		using traits_t = x_convert_char_selector<sizeof(type)>;
-		using traits16_t = x_convert_char_selector<2>;
+    //å°†å­—ç¬¦ä¸²è½¬åŒ–ä¸ºæ•´æ•°
+    //å½“é‡åˆ°éæ•°å­—å­—ç¬¦ï¼Œæˆ–è€…è¶…è¿‡int64_tå¯è¡¨è¾¾çš„èŒƒå›´ï¼Œåˆ™åœæ­¢
+    //psz:å°†è¦è½¬æ¢çš„å­—ç¬¦ä¸²
+    //overflow:è¾“å‡ºå‚æ•°ï¼Œå¦‚æœæº¢å‡ºåˆ™å¡«ä¸ºtrueï¼›å¦åˆ™ï¼Œä¸ä¼šæ”¹å˜overflowçš„å€¼
+    //è¿”å›å€¼:å·²ç»è½¬æ¢çš„æ•´æ•°
+    template<class type>
+    really_inline uint64_t x_mm_convert_string_long(uint64_t result, const type*& psz, const type* e, bool& overflow) noexcept
+    {
+        using traits_t = x_convert_char_selector<sizeof(type)>;
+        using traits16_t = x_convert_char_selector<2>;
 
-		constexpr uint64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
-		constexpr uint64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
-		constexpr uint64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
-		constexpr uint64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
-		constexpr uint64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
+        constexpr uint64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
+        constexpr uint64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
+        constexpr uint64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
+        constexpr uint64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
+        constexpr uint64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
 
-		const type* s = psz;
-		for (; s < e; )
-		{
-			intptr_t remaind = e - s;
+        const type* s = psz;
+        for (; s < e; )
+        {
+            intptr_t remaind = e - s;
 
-			uint32_t mask;
-			__m128i i16x4 = traits_t::load_xdigitx4(s);
-/*
-			mask = traits16_t::digit_zero_mask(i16x4);
-			if (mask == traits16_t::MASK4)
-			{
-				s += (std::min)(remaind, (intptr_t)4);
-				continue;
-			}
-			else if (mask == traits16_t::MASK3)
-			{
-				s += (std::min)(remaind, (intptr_t)3);
-				continue;
-			}
-*/
+            uint32_t mask;
+            __m128i i16x4 = traits_t::load_xdigitx4(s);
+            /*
+                        mask = traits16_t::digit_zero_mask(i16x4);
+                        if (mask == traits16_t::MASK4)
+                        {
+                            s += (std::min)(remaind, (intptr_t)4);
+                            continue;
+                        }
+                        else if (mask == traits16_t::MASK3)
+                        {
+                            s += (std::min)(remaind, (intptr_t)3);
+                            continue;
+                        }
+            */
 
-			mask = traits16_t::digit_mask(i16x4);
-			if (mask == traits16_t::MASK4 && remaind >= 4)
-			{
-				if (result > LIMIT_LONG_9999) break;
+            mask = traits16_t::digit_mask(i16x4);
+            if (mask == traits16_t::MASK4 && remaind >= 4)
+            {
+                if (result > LIMIT_LONG_9999) break;
 
-				uint32_t val = traits16_t::cvt_xcharx4_i32(i16x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
-				result = result * 10000 + val;
-				s += 4;
-			}
-			else if ((mask & traits16_t::MASK3) == traits16_t::MASK3 && remaind >= 3)
-			{
-				if (result > LIMIT_LONG_999) break;
+                uint32_t val = traits16_t::cvt_xcharx4_i32(i16x4, _mm_set_epi16(0, 0, 0, 0, 1, 10, 100, 1000));
+                result = result * 10000 + val;
+                s += 4;
+            }
+            else if ((mask & traits16_t::MASK3) == traits16_t::MASK3 && remaind >= 3)
+            {
+                if (result > LIMIT_LONG_999) break;
 
-				uint32_t val = traits16_t::cvt_xcharx4_i32(i16x4, _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100));
-				result = result * 1000 + val;
+                uint32_t val = traits16_t::cvt_xcharx4_i32(i16x4, _mm_set_epi16(0, 0, 0, 0, 0, 1, 10, 100));
+                result = result * 1000 + val;
 
-				psz = s + 3;
-				return result;
-			}
-			else if ((mask & traits16_t::MASK2) == traits16_t::MASK2 && remaind >= 2)
-			{
-				if (result > LIMIT_LONG_99) break;
+                psz = s + 3;
+                return result;
+            }
+            else if ((mask & traits16_t::MASK2) == traits16_t::MASK2 && remaind >= 2)
+            {
+                if (result > LIMIT_LONG_99) break;
 
-				//uint32_t val = traits16_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
-				uint32_t val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
-				result = result * 100 + val;
+                //uint32_t val = traits16_t::cvt_xcharx4_i32(i8x4, _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10));
+                uint32_t val = (s[0] - (type)'0') * 10 + (s[1] - (type)'0');
+                result = result * 100 + val;
 
-				psz = s + 2;
-				return result;
-			}
-			else if ((mask & traits16_t::MASK1) == traits16_t::MASK1)
-			{
-				if (result > LIMIT_LONG_9) break;
+                psz = s + 2;
+                return result;
+            }
+            else if ((mask & traits16_t::MASK1) == traits16_t::MASK1)
+            {
+                if (result > LIMIT_LONG_9) break;
 
-				uint32_t val = *s - (type)'0';
-				result = result * 10 + val;
+                uint32_t val = *s - (type)'0';
+                result = result * 10 + val;
 
-				psz = s + 1;
-				return result;
-			}
-			else
-			{
-				psz = s;
-				return result;
-			}
-		}
+                psz = s + 1;
+                return result;
+            }
+            else
+            {
+                psz = s;
+                return result;
+            }
+        }
 
-		for (; s < e && x_is_digit(*s); ++s)
-		{
-			if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
-			{
-				if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= (type)'8')
-				{
-					overflow = true;
-					break;
-				}
-			}
+        for (; s < e && x_is_digit(*s); ++s)
+        {
+            if (result >= 0x0CCCCCCCCCCCCCCCULL)	// 2^63 = 9223372036854775808
+            {
+                if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= (type)'8')
+                {
+                    overflow = true;
+                    break;
+                }
+            }
 
-			uint32_t val = *s - (type)'0';
-			result = result * 10 + val;
-		}
+            uint32_t val = *s - (type)'0';
+            result = result * 10 + val;
+        }
 
-		psz = s;
-		return result;
-	}
+        psz = s;
+        return result;
+    }
 
-	template<class type>
-	really_inline int64_t x_mm_convert_string_long2(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
-	{
-		constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
-		constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
-		constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
-		constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
-		constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
+    template<class type>
+    really_inline int64_t x_mm_convert_string_long2(int64_t result, const type*& psz, const type* e, bool& overflow) noexcept
+    {
+        constexpr int64_t MAX_LONG = (std::numeric_limits<int64_t>::max)();
+        constexpr int64_t LIMIT_LONG_9999 = (MAX_LONG - 9999) / 10000;
+        constexpr int64_t LIMIT_LONG_999 = (MAX_LONG - 999) / 1000;
+        constexpr int64_t LIMIT_LONG_99 = (MAX_LONG - 99) / 100;
+        constexpr int64_t LIMIT_LONG_9 = (MAX_LONG - 9) / 10;
 
-		const type* s = psz;
-		for (; s < e && x_is_digit(*s); ++s)
-		{
-			//int64_t::max=2^63-1
-			//2 ^ 63 = 9223372036854775808
-			//2 ^ 62 = 922337203685477580 = 0x0CCCCCCCCCCCCCCC
-			if (unlikely(result >= 0x0CCCCCCCCCCCCCCCULL))
-			{
-				if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= (type)'8')
-				{
-					overflow = true;
-					break;
-				}
-			}
+        const type* s = psz;
+        for (; s < e && x_is_digit(*s); ++s)
+        {
+            //int64_t::max=2^63-1
+            //2 ^ 63 = 9223372036854775808
+            //2 ^ 62 = 922337203685477580 = 0x0CCCCCCCCCCCCCCC
+            if (unlikely(result >= 0x0CCCCCCCCCCCCCCCULL))
+            {
+                if (result != 0x0CCCCCCCCCCCCCCCULL || *s >= (type)'8')
+                {
+                    overflow = true;
+                    break;
+                }
+            }
 
-			int val = *s - (type)'0';
-			result = result * 10 + val;
-		}
+            int val = *s - (type)'0';
+            result = result * 10 + val;
+        }
 
-		psz = s;
-		return result;
-	}
+        psz = s;
+        return result;
+    }
 
-	static const double DOUBLE_E[] =
-	{ // 1e-0...1e308: 309 * 8 bytes = 2472 bytes
-		1e+0,
-		1e+1,  1e+2,  1e+3,  1e+4,  1e+5,  1e+6,  1e+7,  1e+8,  1e+9,  1e+10, 1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20,
-		1e+21, 1e+22, 1e+23, 1e+24, 1e+25, 1e+26, 1e+27, 1e+28, 1e+29, 1e+30, 1e+31, 1e+32, 1e+33, 1e+34, 1e+35, 1e+36, 1e+37, 1e+38, 1e+39, 1e+40,
-		1e+41, 1e+42, 1e+43, 1e+44, 1e+45, 1e+46, 1e+47, 1e+48, 1e+49, 1e+50, 1e+51, 1e+52, 1e+53, 1e+54, 1e+55, 1e+56, 1e+57, 1e+58, 1e+59, 1e+60,
-		1e+61, 1e+62, 1e+63, 1e+64, 1e+65, 1e+66, 1e+67, 1e+68, 1e+69, 1e+70, 1e+71, 1e+72, 1e+73, 1e+74, 1e+75, 1e+76, 1e+77, 1e+78, 1e+79, 1e+80,
-		1e+81, 1e+82, 1e+83, 1e+84, 1e+85, 1e+86, 1e+87, 1e+88, 1e+89, 1e+90, 1e+91, 1e+92, 1e+93, 1e+94, 1e+95, 1e+96, 1e+97, 1e+98, 1e+99, 1e+100,
-		1e+101,1e+102,1e+103,1e+104,1e+105,1e+106,1e+107,1e+108,1e+109,1e+110,1e+111,1e+112,1e+113,1e+114,1e+115,1e+116,1e+117,1e+118,1e+119,1e+120,
-		1e+121,1e+122,1e+123,1e+124,1e+125,1e+126,1e+127,1e+128,1e+129,1e+130,1e+131,1e+132,1e+133,1e+134,1e+135,1e+136,1e+137,1e+138,1e+139,1e+140,
-		1e+141,1e+142,1e+143,1e+144,1e+145,1e+146,1e+147,1e+148,1e+149,1e+150,1e+151,1e+152,1e+153,1e+154,1e+155,1e+156,1e+157,1e+158,1e+159,1e+160,
-		1e+161,1e+162,1e+163,1e+164,1e+165,1e+166,1e+167,1e+168,1e+169,1e+170,1e+171,1e+172,1e+173,1e+174,1e+175,1e+176,1e+177,1e+178,1e+179,1e+180,
-		1e+181,1e+182,1e+183,1e+184,1e+185,1e+186,1e+187,1e+188,1e+189,1e+190,1e+191,1e+192,1e+193,1e+194,1e+195,1e+196,1e+197,1e+198,1e+199,1e+200,
-		1e+201,1e+202,1e+203,1e+204,1e+205,1e+206,1e+207,1e+208,1e+209,1e+210,1e+211,1e+212,1e+213,1e+214,1e+215,1e+216,1e+217,1e+218,1e+219,1e+220,
-		1e+221,1e+222,1e+223,1e+224,1e+225,1e+226,1e+227,1e+228,1e+229,1e+230,1e+231,1e+232,1e+233,1e+234,1e+235,1e+236,1e+237,1e+238,1e+239,1e+240,
-		1e+241,1e+242,1e+243,1e+244,1e+245,1e+246,1e+247,1e+248,1e+249,1e+250,1e+251,1e+252,1e+253,1e+254,1e+255,1e+256,1e+257,1e+258,1e+259,1e+260,
-		1e+261,1e+262,1e+263,1e+264,1e+265,1e+266,1e+267,1e+268,1e+269,1e+270,1e+271,1e+272,1e+273,1e+274,1e+275,1e+276,1e+277,1e+278,1e+279,1e+280,
-		1e+281,1e+282,1e+283,1e+284,1e+285,1e+286,1e+287,1e+288,1e+289,1e+290,1e+291,1e+292,1e+293,1e+294,1e+295,1e+296,1e+297,1e+298,1e+299,1e+300,
-		1e+301,1e+302,1e+303,1e+304,1e+305,1e+306,1e+307,1e+308
-	};
+    static const double DOUBLE_E[] =
+    { // 1e-0...1e308: 309 * 8 bytes = 2472 bytes
+        1e+0,
+        1e+1,  1e+2,  1e+3,  1e+4,  1e+5,  1e+6,  1e+7,  1e+8,  1e+9,  1e+10, 1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20,
+        1e+21, 1e+22, 1e+23, 1e+24, 1e+25, 1e+26, 1e+27, 1e+28, 1e+29, 1e+30, 1e+31, 1e+32, 1e+33, 1e+34, 1e+35, 1e+36, 1e+37, 1e+38, 1e+39, 1e+40,
+        1e+41, 1e+42, 1e+43, 1e+44, 1e+45, 1e+46, 1e+47, 1e+48, 1e+49, 1e+50, 1e+51, 1e+52, 1e+53, 1e+54, 1e+55, 1e+56, 1e+57, 1e+58, 1e+59, 1e+60,
+        1e+61, 1e+62, 1e+63, 1e+64, 1e+65, 1e+66, 1e+67, 1e+68, 1e+69, 1e+70, 1e+71, 1e+72, 1e+73, 1e+74, 1e+75, 1e+76, 1e+77, 1e+78, 1e+79, 1e+80,
+        1e+81, 1e+82, 1e+83, 1e+84, 1e+85, 1e+86, 1e+87, 1e+88, 1e+89, 1e+90, 1e+91, 1e+92, 1e+93, 1e+94, 1e+95, 1e+96, 1e+97, 1e+98, 1e+99, 1e+100,
+        1e+101,1e+102,1e+103,1e+104,1e+105,1e+106,1e+107,1e+108,1e+109,1e+110,1e+111,1e+112,1e+113,1e+114,1e+115,1e+116,1e+117,1e+118,1e+119,1e+120,
+        1e+121,1e+122,1e+123,1e+124,1e+125,1e+126,1e+127,1e+128,1e+129,1e+130,1e+131,1e+132,1e+133,1e+134,1e+135,1e+136,1e+137,1e+138,1e+139,1e+140,
+        1e+141,1e+142,1e+143,1e+144,1e+145,1e+146,1e+147,1e+148,1e+149,1e+150,1e+151,1e+152,1e+153,1e+154,1e+155,1e+156,1e+157,1e+158,1e+159,1e+160,
+        1e+161,1e+162,1e+163,1e+164,1e+165,1e+166,1e+167,1e+168,1e+169,1e+170,1e+171,1e+172,1e+173,1e+174,1e+175,1e+176,1e+177,1e+178,1e+179,1e+180,
+        1e+181,1e+182,1e+183,1e+184,1e+185,1e+186,1e+187,1e+188,1e+189,1e+190,1e+191,1e+192,1e+193,1e+194,1e+195,1e+196,1e+197,1e+198,1e+199,1e+200,
+        1e+201,1e+202,1e+203,1e+204,1e+205,1e+206,1e+207,1e+208,1e+209,1e+210,1e+211,1e+212,1e+213,1e+214,1e+215,1e+216,1e+217,1e+218,1e+219,1e+220,
+        1e+221,1e+222,1e+223,1e+224,1e+225,1e+226,1e+227,1e+228,1e+229,1e+230,1e+231,1e+232,1e+233,1e+234,1e+235,1e+236,1e+237,1e+238,1e+239,1e+240,
+        1e+241,1e+242,1e+243,1e+244,1e+245,1e+246,1e+247,1e+248,1e+249,1e+250,1e+251,1e+252,1e+253,1e+254,1e+255,1e+256,1e+257,1e+258,1e+259,1e+260,
+        1e+261,1e+262,1e+263,1e+264,1e+265,1e+266,1e+267,1e+268,1e+269,1e+270,1e+271,1e+272,1e+273,1e+274,1e+275,1e+276,1e+277,1e+278,1e+279,1e+280,
+        1e+281,1e+282,1e+283,1e+284,1e+285,1e+286,1e+287,1e+288,1e+289,1e+290,1e+291,1e+292,1e+293,1e+294,1e+295,1e+296,1e+297,1e+298,1e+299,1e+300,
+        1e+301,1e+302,1e+303,1e+304,1e+305,1e+306,1e+307,1e+308
+    };
 
-	static const double DOUBLE_NE[] =
-	{ // 1e-0...1e308: 309 * 8 bytes = 2472 bytes
-		1e-0,
-		1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6,  1e-7,  1e-8,  1e-9,  1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 1e-16, 1e-17, 1e-18, 1e-19, 1e-20,
-		1e-21, 1e-22, 1e-23, 1e-24, 1e-25, 1e-26, 1e-27, 1e-28, 1e-29, 1e-30, 1e-31, 1e-32, 1e-33, 1e-34, 1e-35, 1e-36, 1e-37, 1e-38, 1e-39, 1e-40,
-		1e-41, 1e-42, 1e-43, 1e-44, 1e-45, 1e-46, 1e-47, 1e-48, 1e-49, 1e-50, 1e-51, 1e-52, 1e-53, 1e-54, 1e-55, 1e-56, 1e-57, 1e-58, 1e-59, 1e-60,
-		1e-61, 1e-62, 1e-63, 1e-64, 1e-65, 1e-66, 1e-67, 1e-68, 1e-69, 1e-70, 1e-71, 1e-72, 1e-73, 1e-74, 1e-75, 1e-76, 1e-77, 1e-78, 1e-79, 1e-80,
-		1e-81, 1e-82, 1e-83, 1e-84, 1e-85, 1e-86, 1e-87, 1e-88, 1e-89, 1e-90, 1e-91, 1e-92, 1e-93, 1e-94, 1e-95, 1e-96, 1e-97, 1e-98, 1e-99, 1e-100,
-		1e-101,1e-102,1e-103,1e-104,1e-105,1e-106,1e-107,1e-108,1e-109,1e-110,1e-111,1e-112,1e-113,1e-114,1e-115,1e-116,1e-117,1e-118,1e-119,1e-120,
-		1e-121,1e-122,1e-123,1e-124,1e-125,1e-126,1e-127,1e-128,1e-129,1e-130,1e-131,1e-132,1e-133,1e-134,1e-135,1e-136,1e-137,1e-138,1e-139,1e-140,
-		1e-141,1e-142,1e-143,1e-144,1e-145,1e-146,1e-147,1e-148,1e-149,1e-150,1e-151,1e-152,1e-153,1e-154,1e-155,1e-156,1e-157,1e-158,1e-159,1e-160,
-		1e-161,1e-162,1e-163,1e-164,1e-165,1e-166,1e-167,1e-168,1e-169,1e-170,1e-171,1e-172,1e-173,1e-174,1e-175,1e-176,1e-177,1e-178,1e-179,1e-180,
-		1e-181,1e-182,1e-183,1e-184,1e-185,1e-186,1e-187,1e-188,1e-189,1e-190,1e-191,1e-192,1e-193,1e-194,1e-195,1e-196,1e-197,1e-198,1e-199,1e-200,
-		1e-201,1e-202,1e-203,1e-204,1e-205,1e-206,1e-207,1e-208,1e-209,1e-210,1e-211,1e-212,1e-213,1e-214,1e-215,1e-216,1e-217,1e-218,1e-219,1e-220,
-		1e-221,1e-222,1e-223,1e-224,1e-225,1e-226,1e-227,1e-228,1e-229,1e-230,1e-231,1e-232,1e-233,1e-234,1e-235,1e-236,1e-237,1e-238,1e-239,1e-240,
-		1e-241,1e-242,1e-243,1e-244,1e-245,1e-246,1e-247,1e-248,1e-249,1e-250,1e-251,1e-252,1e-253,1e-254,1e-255,1e-256,1e-257,1e-258,1e-259,1e-260,
-		1e-261,1e-262,1e-263,1e-264,1e-265,1e-266,1e-267,1e-268,1e-269,1e-270,1e-271,1e-272,1e-273,1e-274,1e-275,1e-276,1e-277,1e-278,1e-279,1e-280,
-		1e-281,1e-282,1e-283,1e-284,1e-285,1e-286,1e-287,1e-288,1e-289,1e-290,1e-291,1e-292,1e-293,1e-294,1e-295,1e-296,1e-297,1e-298,1e-299,1e-300,
-		1e-301,1e-302,1e-303,1e-304,1e-305,1e-306,1e-307,1e-308
-	};
+    static const double DOUBLE_NE[] =
+    { // 1e-0...1e308: 309 * 8 bytes = 2472 bytes
+        1e-0,
+        1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6,  1e-7,  1e-8,  1e-9,  1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 1e-16, 1e-17, 1e-18, 1e-19, 1e-20,
+        1e-21, 1e-22, 1e-23, 1e-24, 1e-25, 1e-26, 1e-27, 1e-28, 1e-29, 1e-30, 1e-31, 1e-32, 1e-33, 1e-34, 1e-35, 1e-36, 1e-37, 1e-38, 1e-39, 1e-40,
+        1e-41, 1e-42, 1e-43, 1e-44, 1e-45, 1e-46, 1e-47, 1e-48, 1e-49, 1e-50, 1e-51, 1e-52, 1e-53, 1e-54, 1e-55, 1e-56, 1e-57, 1e-58, 1e-59, 1e-60,
+        1e-61, 1e-62, 1e-63, 1e-64, 1e-65, 1e-66, 1e-67, 1e-68, 1e-69, 1e-70, 1e-71, 1e-72, 1e-73, 1e-74, 1e-75, 1e-76, 1e-77, 1e-78, 1e-79, 1e-80,
+        1e-81, 1e-82, 1e-83, 1e-84, 1e-85, 1e-86, 1e-87, 1e-88, 1e-89, 1e-90, 1e-91, 1e-92, 1e-93, 1e-94, 1e-95, 1e-96, 1e-97, 1e-98, 1e-99, 1e-100,
+        1e-101,1e-102,1e-103,1e-104,1e-105,1e-106,1e-107,1e-108,1e-109,1e-110,1e-111,1e-112,1e-113,1e-114,1e-115,1e-116,1e-117,1e-118,1e-119,1e-120,
+        1e-121,1e-122,1e-123,1e-124,1e-125,1e-126,1e-127,1e-128,1e-129,1e-130,1e-131,1e-132,1e-133,1e-134,1e-135,1e-136,1e-137,1e-138,1e-139,1e-140,
+        1e-141,1e-142,1e-143,1e-144,1e-145,1e-146,1e-147,1e-148,1e-149,1e-150,1e-151,1e-152,1e-153,1e-154,1e-155,1e-156,1e-157,1e-158,1e-159,1e-160,
+        1e-161,1e-162,1e-163,1e-164,1e-165,1e-166,1e-167,1e-168,1e-169,1e-170,1e-171,1e-172,1e-173,1e-174,1e-175,1e-176,1e-177,1e-178,1e-179,1e-180,
+        1e-181,1e-182,1e-183,1e-184,1e-185,1e-186,1e-187,1e-188,1e-189,1e-190,1e-191,1e-192,1e-193,1e-194,1e-195,1e-196,1e-197,1e-198,1e-199,1e-200,
+        1e-201,1e-202,1e-203,1e-204,1e-205,1e-206,1e-207,1e-208,1e-209,1e-210,1e-211,1e-212,1e-213,1e-214,1e-215,1e-216,1e-217,1e-218,1e-219,1e-220,
+        1e-221,1e-222,1e-223,1e-224,1e-225,1e-226,1e-227,1e-228,1e-229,1e-230,1e-231,1e-232,1e-233,1e-234,1e-235,1e-236,1e-237,1e-238,1e-239,1e-240,
+        1e-241,1e-242,1e-243,1e-244,1e-245,1e-246,1e-247,1e-248,1e-249,1e-250,1e-251,1e-252,1e-253,1e-254,1e-255,1e-256,1e-257,1e-258,1e-259,1e-260,
+        1e-261,1e-262,1e-263,1e-264,1e-265,1e-266,1e-267,1e-268,1e-269,1e-270,1e-271,1e-272,1e-273,1e-274,1e-275,1e-276,1e-277,1e-278,1e-279,1e-280,
+        1e-281,1e-282,1e-283,1e-284,1e-285,1e-286,1e-287,1e-288,1e-289,1e-290,1e-291,1e-292,1e-293,1e-294,1e-295,1e-296,1e-297,1e-298,1e-299,1e-300,
+        1e-301,1e-302,1e-303,1e-304,1e-305,1e-306,1e-307,1e-308
+    };
 
-	static const int64_t LONG_E[] =
-	{
-		1,
-		10,
-		100,
-		1000,
-		10000,
-		100000,
-		1000000,
-		10000000,
-		100000000,
-		1000000000,
-		10000000000,
-		100000000000,
-		1000000000000,
-		10000000000000,
-		100000000000000,
-		1000000000000000,
-		10000000000000000,
-	};
+    static const int64_t LONG_E[] =
+    {
+        1,
+        10,
+        100,
+        1000,
+        10000,
+        100000,
+        1000000,
+        10000000,
+        100000000,
+        1000000000,
+        10000000000,
+        100000000000,
+        1000000000000,
+        10000000000000,
+        100000000000000,
+        1000000000000000,
+        10000000000000000,
+    };
 
-	really_inline double x_fast_path(double significand, intptr_t exp) noexcept
-	{
-		assert(exp >= -308 && exp <= 308);
+    really_inline double x_fast_path(double significand, intptr_t exp) noexcept
+    {
+        assert(exp >= -308 && exp <= 308);
 
-		if (exp >= 0)
-			return significand * DOUBLE_E[exp];
-		else
-			return significand * DOUBLE_NE[-exp];
-	}
+        if (exp >= 0)
+            return significand * DOUBLE_E[exp];
+        else
+            return significand * DOUBLE_NE[-exp];
+    }
 
-	template<class _CharType>
-	std::tuple<number_value, parser_result> simd_double_parser2(const _CharType*& s, const _CharType* const pszEnd) noexcept
-	{
-		const _CharType* psz = s;
+    template<class _CharType>
+    std::tuple<number_value, parser_result> simd_double_parser2(const _CharType*& s, const _CharType* const pszEnd) noexcept
+    {
+        const _CharType* psz = s;
 
-		//ÏÈ´¦ÀíÕı¸ººÅ
-		bool minus = *psz == '-';
-		if (minus) ++psz;
-		else if (*psz == '+') ++psz;
+        //å…ˆå¤„ç†æ­£è´Ÿå·
+        bool minus = *psz == '-';
+        if (minus) ++psz;
+        else if (*psz == '+') ++psz;
 
-		if (psz >= pszEnd)
-		{
-			return { number_value{0}, parser_result::Invalid };
-		}
+        if (psz >= pszEnd)
+        {
+            return { number_value{0}, parser_result::Invalid };
+        }
 
-		intptr_t exp = 0;
-		bool useDouble = false;	//³õÊ¼Ã»Òç³ö£¬Èç¹ûÕûÊıÒç³öÁË£¬ÔòĞèÒªÊ¹ÓÃ¸¡µãÊıËã·¨
-		uint64_t i64;
+        intptr_t exp = 0;
+        bool useDouble = false;	//åˆå§‹æ²¡æº¢å‡ºï¼Œå¦‚æœæ•´æ•°æº¢å‡ºäº†ï¼Œåˆ™éœ€è¦ä½¿ç”¨æµ®ç‚¹æ•°ç®—æ³•
+        uint64_t i64;
 
 #if 1
-		if (*psz == '0')
-		{
-			++psz;
-			if (psz >= pszEnd)
-			{
-				s = psz;
-				return { number_value{0}, parser_result::Long };
-			}
-			else if (*psz == '.')
-			{
-				i64 = 0;
-				goto label_dot;
-			}
-			else if (!x_is_digit(*psz))
-			{
-				s = psz;
-				return { number_value{0}, parser_result::Long };
-			}
-			else
-			{
-				s = psz;
-				return { number_value{0}, parser_result::Invalid };
-			}
-		}
+        if (*psz == '0')
+        {
+            ++psz;
+            if (psz >= pszEnd)
+            {
+                s = psz;
+                return { number_value{0}, parser_result::Long };
+            }
+            else if (*psz == '.')
+            {
+                i64 = 0;
+                goto label_dot;
+            }
+            else if (!x_is_digit(*psz))
+            {
+                s = psz;
+                return { number_value{0}, parser_result::Long };
+            }
+            else
+            {
+                s = psz;
+                return { number_value{0}, parser_result::Invalid };
+            }
+        }
+        else if (*psz == '.')
+        {
+            if (psz + 1 >= pszEnd || !x_is_digit(psz[1]))
+            {
+                s = psz;
+                return { number_value{0}, parser_result::Invalid };
+            }
+
+            i64 = 0;
+            goto label_dot;
+        }
 #endif
 
-		i64 = x_mm_convert_string_long(0, psz, pszEnd, useDouble);
-		if (useDouble)
-		{//¾«¶ÈÒç³ö£¬Ê¹ÓÃ¸¡µãÊıËã·¨
-			const _CharType* const pszSaved = psz;
-			for (; x_is_digit(*psz); ++psz);
-			exp = psz - pszSaved;
-		}
+        i64 = x_mm_convert_string_long(0, psz, pszEnd, useDouble);
+        if (useDouble)
+        {//ç²¾åº¦æº¢å‡ºï¼Œä½¿ç”¨æµ®ç‚¹æ•°ç®—æ³•
+            const _CharType* const pszSaved = psz;
+            for (; x_is_digit(*psz); ++psz);
+            exp = psz - pszSaved;
+        }
 
-		if (psz < pszEnd && *psz == '.')
-		{//Óöµ½Ğ¡ÊıµãÁË
-	label_dot:
-			++psz;
-			const _CharType* pszDot = psz;
+        if (psz < pszEnd && *psz == '.')
+        {//é‡åˆ°å°æ•°ç‚¹äº†
+        label_dot:
+            ++psz;
+            const _CharType* pszDot = psz;
 
-			if (!useDouble)
-			{//»¹Î´Òç³ö£¬½âÎöĞ¡ÊıµãºóÃæµÄÕûÊı
+            if (!useDouble)
+            {//è¿˜æœªæº¢å‡ºï¼Œè§£æå°æ•°ç‚¹åé¢çš„æ•´æ•°
 /*
-				uint32_t test_zero = *(uint32_t*)psz;
-				if (test_zero == 0x30303030)
-					psz += 4;
-				else if ((test_zero & 0x00ffffff) == 0x00303030)
-					psz += 3;
-				else if ((test_zero & 0x0000ffff) == 0x00003030)
-					psz += 2;
+                uint32_t test_zero = *(uint32_t*)psz;
+                if (test_zero == 0x30303030)
+                    psz += 4;
+                else if ((test_zero & 0x00ffffff) == 0x00303030)
+                    psz += 3;
+                else if ((test_zero & 0x0000ffff) == 0x00003030)
+                    psz += 2;
 */
-				//for (; psz < pszEnd && *psz == '0'; ++psz);	//Ìø¹ıÎŞÒâÒåµÄ0
+//for (; psz < pszEnd && *psz == '0'; ++psz);	//è·³è¿‡æ— æ„ä¹‰çš„0
 
-				i64 = x_mm_convert_string_long(i64, psz, pszEnd, useDouble);
-			}
+                i64 = x_mm_convert_string_long(i64, psz, pszEnd, useDouble);
+            }
 
-			if (useDouble)
-			{
-				exp += pszDot - psz;	//ÒÑÇóµÄ¸¡µãÊıµÄÖ¸Êı
+            if (useDouble)
+            {
+                exp += pszDot - psz;	//å·²æ±‚çš„æµ®ç‚¹æ•°çš„æŒ‡æ•°
 
-				//ÒÑ¾­µÖ´ï¾«¶ÈÉÏÏŞ£¬ºóĞø×Ö·û²»ÔÙ·ÖÎö
-				for (; x_is_digit(*psz); ++psz);
-			}
-			else
-			{
-				exp += pszDot - psz;
-				useDouble = true;
-			}
-		}
+                //å·²ç»æŠµè¾¾ç²¾åº¦ä¸Šé™ï¼Œåç»­å­—ç¬¦ä¸å†åˆ†æ
+                for (; x_is_digit(*psz); ++psz);
+            }
+            else
+            {
+                exp += pszDot - psz;
+                useDouble = true;
+            }
+        }
 
-		if (psz < pszEnd && (*psz | 32) == 'e')
-		{//½âÎöÖ¸Êı
-			if (!useDouble)
-			{//Èç¹ûÖ®Ç°ÊÇÕûÊı£¬Ôò½ÓÏÂÀ´Òª°´ÕÕ¸¡µãÊı½øĞĞ½âÎöÁË
-				useDouble = true;
-			}
-			++psz;
+        if (psz < pszEnd && (*psz | 32) == 'e')
+        {//è§£ææŒ‡æ•°
+            if (!useDouble)
+            {//å¦‚æœä¹‹å‰æ˜¯æ•´æ•°ï¼Œåˆ™æ¥ä¸‹æ¥è¦æŒ‰ç…§æµ®ç‚¹æ•°è¿›è¡Œè§£æäº†
+                useDouble = true;
+            }
+            ++psz;
 
-			bool expMinus = false;
-			if (psz < pszEnd && *psz == '+')
-			{
-				++psz;
-			}
-			else if (psz < pszEnd && *psz == '-')
-			{
-				++psz;
-				expMinus = true;
-			}
+            bool expMinus = false;
+            if (psz < pszEnd && *psz == '+')
+            {
+                ++psz;
+            }
+            else if (psz < pszEnd && *psz == '-')
+            {
+                ++psz;
+                expMinus = true;
+            }
 
-			if (psz >= pszEnd)
-			{
-				s = psz;
-				return { number_value{0}, parser_result::Invalid };
-			}
+            if (psz >= pszEnd)
+            {
+                s = psz;
+                return { number_value{0}, parser_result::Invalid };
+            }
 
-			bool overflow = false;	//³õÊ¼Ã»Òç³ö£¬Èç¹ûÕûÊıÒç³öÁË£¬ÔòÈÏÎªÕâÊÇÒ»¸öÎŞĞ§µÄÊı
-			uint64_t e2 = x_mm_convert_string_long(0, psz, pszEnd, overflow);
+            bool overflow = false;	//åˆå§‹æ²¡æº¢å‡ºï¼Œå¦‚æœæ•´æ•°æº¢å‡ºäº†ï¼Œåˆ™è®¤ä¸ºè¿™æ˜¯ä¸€ä¸ªæ— æ•ˆçš„æ•°
+            uint64_t e2 = x_mm_convert_string_long(0, psz, pszEnd, overflow);
 
-			if (overflow || e2 > ((std::numeric_limits<int32_t>::max)() / 2))
-			{
-				s = psz;
-				return { number_value{0}, parser_result::Invalid };
-			}
+            if (overflow || e2 > ((std::numeric_limits<int32_t>::max)() / 2))
+            {
+                s = psz;
+                return { number_value{0}, parser_result::Invalid };
+            }
 
-			//½«Ö¸ÊıÀÛ»ıÉÏÈ¥
-			if (expMinus)
-				exp -= (intptr_t)e2;
-			else
-				exp += (intptr_t)e2;
-		}
+            //å°†æŒ‡æ•°ç´¯ç§¯ä¸Šå»
+            if (expMinus)
+                exp -= (intptr_t)e2;
+            else
+                exp += (intptr_t)e2;
+        }
 
-		if (useDouble)
-		{
-			double dval;
-/*
-			bool success = true;
-			dval = fast_double_parser::compute_float_64(exp, i64, false, &success);
-			if (!success)
-*/
-			{
-				if (exp < -330)	//330 = 308 + 22
-				{
-					dval = 0.0;
-				}
-				else if (exp < -308)
-				{
-					dval = x_fast_path((double)i64, -308);
-					dval = x_fast_path(dval, exp + 308);
-				}
-				else if (exp > 330)	//330 = 308 + 22
-				{
-					dval = INFINITY;
-				}
-				else if (exp > 308)
-				{
-					dval = x_fast_path((double)i64, 308);
-					dval = x_fast_path(dval, exp - 308);
-				}
-				else if (exp != 0)
-				{
-					dval = x_fast_path((double)i64, exp);
-				}
-				else
-				{
-					dval = (double)i64;
-				}
-			}
+        if (useDouble)
+        {
+            double dval;
+            /*
+                        bool success = true;
+                        dval = fast_double_parser::compute_float_64(exp, i64, false, &success);
+                        if (!success)
+            */
+            {
+                if (exp < -330)	//330 = 308 + 22
+                {
+                    dval = 0.0;
+                }
+                else if (exp < -308)
+                {
+                    dval = x_fast_path((double)i64, -308);
+                    dval = x_fast_path(dval, exp + 308);
+                }
+                else if (exp > 330)	//330 = 308 + 22
+                {
+                    dval = std::numeric_limits<double>::infinity();
+                }
+                else if (exp > 308)
+                {
+                    dval = x_fast_path((double)i64, 308);
+                    dval = x_fast_path(dval, exp - 308);
+                }
+                else if (exp != 0)
+                {
+                    dval = x_fast_path((double)i64, exp);
+                }
+                else
+                {
+                    dval = (double)i64;
+                }
+            }
 
-			number_value nv;
-			nv.d = minus ? -dval : dval;
+            number_value nv;
+            nv.d = minus ? -dval : dval;
 
-			s = psz;
-			return { nv, parser_result::Double };
-		}
-		else
-		{
-			number_value nv;
-			nv.l = minus ? -(int64_t)i64 : (int64_t)i64;
+            s = psz;
+            return { nv, parser_result::Double };
+        }
+        else
+        {
+            number_value nv;
+            nv.l = minus ? -(int64_t)i64 : (int64_t)i64;
 
-			s = psz;
-			return { nv, parser_result::Long };
-		}
-	}
+            s = psz;
+            return { nv, parser_result::Long };
+        }
+    }
 
 }

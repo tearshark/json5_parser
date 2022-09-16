@@ -1,17 +1,19 @@
-# json5_parser
-Ò»¸öÖ§³Ö**json5**µÄjson½âÎöÆ÷¡£<br>½âÎöÆ÷ºÍDOM²ğ·ÖÎªÁ½¸ö²¿·Ö£¬ÒÔ±ãÓÚÍâ²¿¶¨ÖÆDOMÊµÏÖ¡£<br>
+ï»¿# json5_parser 
+[https://github.com/tearshark/json5_parser](https://github.com/tearshark/json5_parser)
 
-¿ÉÒÔÍ¨¹ı¿ª¹Ø **JSON_ENABLE_JSON5** ¿ØÖÆÊÇ·ñÖ§³Ö**json5**¡£<br>
+ä¸€ä¸ªæ”¯æŒ**json5**çš„jsonè§£æå™¨ã€‚<br>è§£æå™¨å’ŒDOMæ‹†åˆ†ä¸ºä¸¤ä¸ªéƒ¨åˆ†ï¼Œä»¥ä¾¿äºå¤–éƒ¨å®šåˆ¶DOMå®ç°ã€‚<br>
 
-#### Ò»¡¢ÎÊÌâ
+å¯ä»¥é€šè¿‡å¼€å…³ **JSON_ENABLE_JSON5** æ§åˆ¶æ˜¯å¦æ”¯æŒ**json5**ã€‚<br>
 
-Ä¿Ç°ÒÑÖªÎÊÌâ£º¶Ô×Ö·û´®±ê×¼Ö§³Ö½ÏÈõ¡£<br>
+#### ä¸€ã€é—®é¢˜
 
-#### ¶ş¡¢Ğ§ÂÊ
+ç›®å‰å·²çŸ¥é—®é¢˜ï¼šå¯¹å­—ç¬¦ä¸²æ ‡å‡†æ”¯æŒè¾ƒå¼±ã€‚<br>
 
-ÔÚI7 8700K 3.7GHz(OC 4.3GHz)£¬Ê¹ÓÃVS 2019 / clang 9.0.0±àÒë(È¡³É¼¨ºÃµÄ±àÒëÆ÷½á¹û£©£¬²âÊÔdataÄ¿Â¼ÏÂ¸½´øµÄÈı¸öjson£¬»ñµÃÊı¾İÈçÏÂ£º<br>
+#### äºŒã€æ•ˆç‡
 
-###### 1¡¢¹Ø±Õjson5Ñ¡Ïî£¬¿ªÆôsimdÑ¡Ïî
+åœ¨I7 8700K 3.7GHz(OC 4.3GHz)ï¼Œä½¿ç”¨VS 2019 / clang 9.0.0ç¼–è¯‘(å–æˆç»©å¥½çš„ç¼–è¯‘å™¨ç»“æœï¼‰ï¼Œæµ‹è¯•dataç›®å½•ä¸‹é™„å¸¦çš„ä¸‰ä¸ªjsonï¼Œè·å¾—æ•°æ®å¦‚ä¸‹ï¼š<br>
+
+###### 1ã€å…³é—­json5é€‰é¡¹ï¼Œå¼€å¯simdé€‰é¡¹
 ```
 dummy
 benchmark_json5_parser parse file: ./data/canada.json
@@ -36,13 +38,13 @@ parse 631514 bytes cost 1.20984 s, speeds is 398.239 MB/s
 benchmark_rapidjson parse file: ./data/citm_catalog.json
 parse 1727204 bytes cost 1.48519 s, speeds is 887.261 MB/s
 ```
-×¢Ò»£ºdummy½ö²âÊÔ½âÎöÆ÷µÄĞ§ÂÊ£¬²»±£´æÈÎºÎ½âÎö½á¹û¡£
+æ³¨ä¸€ï¼šdummyä»…æµ‹è¯•è§£æå™¨çš„æ•ˆç‡ï¼Œä¸ä¿å­˜ä»»ä½•è§£æç»“æœã€‚
 
-×¢¶ş£ºDOMÓÉ¸½´øµÄJSON_DOMWalkerÊµÏÖ£¬Ã»ÓĞÕıÈ·×ªÒå×Ö·û´®£¬ÓÃÓÚĞèÒª¿ìËÙ¶¨Î»jsonÓÃ¡£
+æ³¨äºŒï¼šDOMç”±é™„å¸¦çš„ rapid_dom_handler å®ç°ï¼Œæ²¡æœ‰æ­£ç¡®è½¬ä¹‰å­—ç¬¦ä¸²ï¼Œç”¨äºéœ€è¦å¿«é€Ÿå®šä½jsonç”¨ã€‚
 
 <br>
 
-| ÏîÄ¿                | ±àÒëÆ÷ | jsonÎÄ¼ş          | ÎÄ¼ş´óĞ¡£¨Bytes£© | ÖØ¸´´ÎÊı | ÓÃÊ±(Ãë) | ËÙ¶È(MB/S)  |
+| é¡¹ç›®                | ç¼–è¯‘å™¨ | jsonæ–‡ä»¶          | æ–‡ä»¶å¤§å°ï¼ˆBytesï¼‰ | é‡å¤æ¬¡æ•° | ç”¨æ—¶(ç§’) | é€Ÿåº¦(MB/S)  |
 | :------------------ | :----: | :---------------- | :---------------: | :------: | :------: | :---------: |
 | json5_parser(dummy) | clang  | canada.json       |      2251060      |   800    | 2.01487  | **852.372** |
 | json5_parser(dummy) | clang  | twitter.json      |      631514       |   800    | 0.42715  | **1127.96** |
@@ -56,7 +58,7 @@ parse 1727204 bytes cost 1.48519 s, speeds is 887.261 MB/s
 
 <br>
 
-###### 2¡¢¿ªÆôjson5Ñ¡Ïî£¬¿ªÆôsimdÑ¡Ïî
+###### 2ã€å¼€å¯json5é€‰é¡¹ï¼Œå¼€å¯simdé€‰é¡¹
 ```
 dummy
 benchmark_json5_parser parse file: ./data/canada.json
@@ -76,7 +78,7 @@ parse 1727204 bytes cost 1.08489 s, speeds is 1214.64 MB/s
 ```
 <br>
 
-| ÏîÄ¿                | ±àÒëÆ÷ | jsonÎÄ¼ş          | ÎÄ¼ş´óĞ¡£¨Bytes£© | ÖØ¸´´ÎÊı | ÓÃÊ±(Ãë) | ËÙ¶È(MB/S)  |
+| é¡¹ç›®                | ç¼–è¯‘å™¨ | jsonæ–‡ä»¶          | æ–‡ä»¶å¤§å°ï¼ˆBytesï¼‰ | é‡å¤æ¬¡æ•° | ç”¨æ—¶(ç§’) | é€Ÿåº¦(MB/S)  |
 | :------------------ | :----: | :---------------- | :---------------: | :------: | :------: | :---------: |
 | json5_parser(dummy) | clang  | canada.json       |      2251060      |   800    | 2.37301  | **723.732** |
 | json5_parser(dummy) | clang  | twitter.json      |      631514       |   800    | 0.453873 | **1061.55** |
@@ -87,12 +89,47 @@ parse 1727204 bytes cost 1.08489 s, speeds is 1214.64 MB/s
 
 <br>
 
-°´ÕÕÏ°¹ß£¬×ßÒ»²¨¹ã¸æ£º
+æŒ‰ç…§ä¹ æƒ¯ï¼Œèµ°ä¸€æ³¢å¹¿å‘Šï¼š
 
-Èç¹ûÄã·¢ÏÖÁËÈÎºÎbug¡¢ÓĞºÃµÄ½¨Òé¡¢»òÊ¹ÓÃÉÏÓĞ²»Ã÷Ö®´¦£¬¿ÉÒÔÌá½»µ½issue£¬Ò²¿ÉÒÔÖ±½ÓÁªÏµ×÷Õß:
+å¦‚æœä½ å‘ç°äº†ä»»ä½•bugã€æœ‰å¥½çš„å»ºè®®ã€æˆ–ä½¿ç”¨ä¸Šæœ‰ä¸æ˜ä¹‹å¤„ï¼Œå¯ä»¥æäº¤åˆ°issueï¼Œä¹Ÿå¯ä»¥ç›´æ¥è”ç³»ä½œè€…:
 
 ```
 email: tearshark@163.net
-QQ½»Á÷Èº: 296561497
+QQäº¤æµç¾¤: 296561497
 ```
 
+<br>
+
+<br>
+
+# json5
+
+åŸºäºjson5_parserçš„json5å®Œæ•´åº“ã€‚<br>
+
+| ç±»å‹               | è¯´æ˜                                                         | åˆ«å                       |
+| ------------------ | ------------------------------------------------------------ | -------------------------- |
+| enum js_type       | æè¿° json5 çš„å€¼çš„ç±»å‹                                        | enum JSON_Type             |
+| js_string          | ç”¨äºå­˜å‚¨ json5 çš„Stringç±»å‹                                  | std::string / std::wstring |
+| js_string_view     | ç”¨äºå¼•ç”¨ json5 çš„Stringç±»å‹                                  | std::string_view           |
+| js_variant         | variant<int64_t, double, js_string, bool, js_object_ptr, js_array_ptr, nullptr_t, monostate> |                            |
+| js_value           | ä»£è¡¨ json5 çš„ä¸€ä¸ªå€¼ï¼Œæä¾› check<>() / get<>() / set<>() æ–¹æ³•ä¾¿äºæ“ä½œ js_variant |                            |
+| js_interface       | js_array / js_object çš„å…¬å…±åŸºç±»ï¼Œæä¾›ä¸¤è€…å…¨éƒ¨çš„æ¥å£ã€‚<br>å¹¶æä¾› opt<>() æ–¹æ³•ä¾¿äºè·³è¿‡ js_value ç›´æ¥æ“ä½œæ•°æ® |                            |
+| js_array           | ä»£è¡¨ json5 çš„Arrayç±»å‹                                       |                            |
+| js_object          | ä»£è¡¨ json5 çš„Ojbectç±»å‹                                      |                            |
+| js_pointer         |                                                              |                            |
+| js_parser          | json5 è§£æå™¨                                                 | js_parser                |
+|                    |                                                              |                            |
+| js_writer          | virtual void push_back(LPCXSTR, size_t) = 0;                 |                            |
+| js_buffer_writer   | å†™å…¥åˆ° js_string çš„ js_writer                                | : js_writer                |
+| js_cfile_writer    | å†™å…¥åˆ° C æ–‡ä»¶(FILE*) çš„ js_writer                            | : js_writer                |
+| js_write_handler   | å°† json5 æ ¼å¼åŒ–æˆæ–‡æœ¬è¾“å‡ºåˆ° js_writer                        | : js_sax_handler              |
+| js_dom_handler     | å°† js_parser çš„ç»“æœè¾“å‡ºæˆ js_interface                       | : js_sax_handler              |
+| js_codecvt         | ç”¨äºæ‰©å±•å­—ç¬¦ä¸²ç¼–ç çš„æ¨¡æ¿ç±»                                   |                            |
+| js_value_convertor | ç”¨äºæ‰©å±•ç›´æ¥ä¸æ›´å¤šç±»å‹è¿›è¡Œäº¤äº’çš„æ¨¡æ¿ç±»                       |                            |
+| js_dump_walker     | void js_dump_walker(const js_value& jv, js_sax_handler* handler); |                            |
+| js_to_string       | js_string js_to_string(const js_value& jv, int tabstop = 0); |                            |
+| js_from_string     | js_interface_ptr js_from_string(LPCXSTR psz, LPCXSTR pszEnd);<br>js_interface_ptr js_from_string(LPCXSTR psz, intptr_t length = -1);<br>js_interface_ptr js_from_string(const js_string_view str); |                            |
+| operator "" _js    | js_interface_ptr operator "" _js(const char* psz, size_t cnt);<br>wjs_interface_ptr operator "" _js(const wchar_t* psz, size_t cnt); |                            |
+| operator "" _jsp   | js_pointer operator "" _jsp(const char* psz, size_t cnt);<br>wjs_pointer operator "" _jsp(const wchar_t* psz, size_t cnt); |                            |
+
+<br>

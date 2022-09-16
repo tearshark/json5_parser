@@ -1,9 +1,11 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <cassert>
 
-#include "../src/simd_double_parser.h"
-#include "../src/fast_double_parser.h"
+#pragma warning(disable : 4996 4101)
+#include "json5_parser/simd_double_parser.h"
+#include "json5_parser/fast_double_parser.h"
 
 int main(int argc, char* argv[])
 {
@@ -118,6 +120,7 @@ int main(int argc, char* argv[])
 
 	simd_double_parser::number_value nv;
 	simd_double_parser::parser_result isDouble;
+	(void)isDouble;
 
 	for (const char* s : psz)
 	{

@@ -15,47 +15,44 @@ namespace json5
 
 #include "json5_parser/xchar/xchar_undef.h"
 #include "json5_parser/xchar/uchar_def.h"
-	namespace unicode
-	{
+    namespace unicode
+    {
 #include "json5_parser/sax_handler.inl"
+#include "json5_parser/dummy_handler.inl"
 #include "json5_parser/parser.inl"
-		typedef JSON_Parser parser;
 
 #if JSON_ENABLE_DEBUG_HANDLER
 #include "json5_parser/debug_handler.inl"
 #endif
-#if JSON_ENABLE_DOM_HANDLER
-#include "json5_parser/dom_handler.inl"
-		typedef JSON_Value value;
-		typedef SAX_DOMHandler dom_handler;
+#if JSON_ENABLE_RAPID_HANDLER
+#include "json5_parser/rapid_dom_handler.inl"
 #endif
-	}
+    }
 
 #include "json5_parser/xchar/xchar_undef.h"
 #include "json5_parser/xchar/schar_def.h"
-	namespace singlebyte
-	{
+    namespace singlebyte
+    {
 #include "json5_parser/sax_handler.inl"
+#include "json5_parser/dummy_handler.inl"
 #include "json5_parser/parser.inl"
-		typedef JSON_Parser parser;
 
 #if JSON_ENABLE_DEBUG_HANDLER
 #include "json5_parser/debug_handler.inl"
 #endif
-#if JSON_ENABLE_DOM_HANDLER
-#include "json5_parser/dom_handler.inl"
-		typedef JSON_Value value;
-		typedef SAX_DOMHandler dom_handler;
+#if JSON_ENABLE_RAPID_HANDLER
+#include "json5_parser/rapid_dom_handler.inl"
 #endif
-	}
+    }
 
-	typedef singlebyte::parser parser;
-	typedef unicode::parser wparser;
+    using js_parser = singlebyte::js_parser;
+    using wjs_parser = unicode::js_parser;
 
-#if JSON_ENABLE_DOM_HANDLER
-	typedef singlebyte::value value;
-	typedef singlebyte::dom_handler dom_handler;
-	typedef unicode::value wvalue;
-	typedef unicode::dom_handler wdom_handler;
+#if JSON_ENABLE_RAPID_HANDLER
+    using rapid_value = singlebyte::rapid_value;
+    using rapid_dom_handler = singlebyte::rapid_dom_handler;
+
+    using rapid_wvalue = unicode::rapid_value;
+    using rapid_wdom_handler = unicode::rapid_dom_handler;
 #endif
 }
