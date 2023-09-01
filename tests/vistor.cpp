@@ -73,7 +73,7 @@ std::unique_ptr<char[]> load_json_from_file(_SAX& sax, const char* path)
 		json::js_parser parser;
 
 		const char* pszEnd = psz.get() + length;
-		bool jv = parser.Parse(&sax, psz.get(), &pszEnd);
+		bool jv = parser.parse(&sax, psz.get(), &pszEnd);
 		if (jv == false)
 			psz = nullptr;
 	}
@@ -85,32 +85,32 @@ void json5_vistor(const char* path)
 {
 	json::rapid_dom_handler dom{ 1024 };
 	auto buffer = load_json_from_file(dom, path);
-	if (buffer != nullptr && dom.Value() != nullptr)
+	if (buffer != nullptr && dom.value() != nullptr)
 	{
-		dom.Value()->Vistor( 
+		dom.value()->vistor(
 			[](const json::rapid_value* js, const json::rapid_value* parent)
 			{
-				if (parent != nullptr && parent->GetType() == json5::JSON_Type::Object)
+				if (parent != nullptr && parent->getType() == json5::js_type::Object)
 				{
-					auto name = js->GetName();
+					auto name = js->getName();
 					std::cout << "\"" << name << "\":";
 				}
 
-				switch (js->GetType())
+				switch (js->getType())
 				{
-				case json5::JSON_Type::Nullptr:
+				case json5::js_type::Nullptr:
 					std::cout << "null";
 					break;
-				case json5::JSON_Type::String:
-					std::cout << "\"" << js->GetString() << "\"";
+				case json5::js_type::String:
+					std::cout << "\"" << js->getString() << "\"";
 					break;
-				case json5::JSON_Type::Double:
+				case json5::js_type::Double:
 					std::cout << js->f;
 					break;
-				case json5::JSON_Type::Long:
+				case json5::js_type::Long:
 					std::cout << js->l;
 					break;
-				case json5::JSON_Type::Boolean:
+				case json5::js_type::Boolean:
 					std::cout << (js->i ? "true" : "false");
 					break;
 				default:

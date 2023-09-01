@@ -18,10 +18,10 @@ struct js_parser
     要使用分析后的结果，需要保持psz仍然是有效的
     JSON_Parse类会保存参数psz指针，但不管理psz内存的释放
     */
-    JSON5_API bool Parse(js_sax_handler* handler, LPCXSTR psz, LPCXSTR* ppszEnd = nullptr);
-    LPCXSTR Error() const  noexcept { return m_pError; }
+    JSON5_API bool parse(js_sax_handler* handler, LPCXSTR psz, LPCXSTR* ppszEnd = nullptr);
+    LPCXSTR errstr() const  noexcept { return m_pError; }
 
-    JSON5_API static int64_t _parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexcept;
+    JSON5_API static int64_t _parse_long(LPCXSTR& psz, LPCXSTR e, js_type& eType) noexcept;
 private:
     bool parse_start(LPCXSTR& s, LPCXSTR e);
     bool parse_pair(LPCXSTR& s, LPCXSTR e);

@@ -1,52 +1,52 @@
 ﻿
 struct alignas(32) rapid_value
 {
-    JSON_Type               type;
+    js_type               type;
     uint16_t                nlen;           //Length of name.
-    uint32_t                slen;           //Length of str, when type equal JSON_Type::String.
+    uint32_t                slen;           //Length of str, when type equal js_type::String.
 
     union alignas(8)
     {
-        rapid_value* elements;              //Last child, when type equal JSON_Type::Object or JSON_Type::Array. 
+        rapid_value* elements;              //Last child, when type equal js_type::Object or js_type::Array. 
                                             //This means that the order of children is reversed.
-        LPCXSTR             str;            //Valid when type equal JSON_Type::String.
-        double              f;              //Valid when type equal JSON_Type::Double.
-        int64_t             l;              //Valid when type equal JSON_Type::Long.
-        int32_t             i;              //Valid when type equal JSON_Type::Boolean.
+        LPCXSTR             str;            //Valid when type equal js_type::String.
+        double              f;              //Valid when type equal js_type::Double.
+        int64_t             l;              //Valid when type equal js_type::Long.
+        int32_t             i;              //Valid when type equal js_type::Boolean.
     };
 
     alignas(8) LPCXSTR      name;           //Valid when the parent is an object.
     alignas(8) rapid_value* prev;           //Previous sibling node, when the parent is an object or an array.
 
 
-    JSON_Type GetType() const noexcept
+    js_type getType() const noexcept
     {
-        return (JSON_Type)(this->type & JSON_Type::LONG_MASK);
+        return (js_type)(this->type & js_type::LONG_MASK);
     }
 
-    JSON5_API size_t ElementsCount() const noexcept;
-    JSON5_API std::basic_string<XCHAR> GetName() const;
-    JSON5_API std::basic_string<XCHAR> GetString() const;
+    JSON5_API size_t elementsCount() const noexcept;
+    JSON5_API std::basic_string<XCHAR> getName() const;
+    JSON5_API std::basic_string<XCHAR> getString() const;
 
     template<class _Vistor>
-    void ForeachElements(const _Vistor& vistor) const
+    void foreachElements(const _Vistor& vistor__) const
     {
-        if (this->type == JSON_Type::Object || this->type == JSON_Type::Array)
+        if (this->type == js_type::Object || this->type == js_type::Array)
             for (const rapid_value* e = this->elements; e != nullptr; e = e->prev)
             {
-                vistor(e);
+                vistor__(e);
             }
     }
 
     template<class _Vistor>
-    void Vistor(const _Vistor& vistor, const rapid_value* jparent = nullptr) const
+    void vistor(const _Vistor& vistor__, const rapid_value* jparent = nullptr) const
     {
-        vistor(this, jparent);
+        vistor__(this, jparent);
 
-        if (this->type == JSON_Type::Object || this->type == JSON_Type::Array)
+        if (this->type == js_type::Object || this->type == js_type::Array)
             for (const rapid_value* e = this->elements; e != nullptr; e = e->prev)
             {
-                e->Vistor(vistor, this);
+                e->vistor(vistor__, this);
             }
     }
 };
@@ -77,10 +77,10 @@ struct rapid_dom_handler : public js_sax_handler
     JSON5_API rapid_dom_handler(size_t nNunBatch);
     JSON5_API ~rapid_dom_handler();
 
-    const rapid_value* Value() const  noexcept { return m_pRootValue; }
-    size_t Count() const  noexcept { return m_Alloctor.size(); }
+    const rapid_value* value() const  noexcept { return m_pRootValue; }
+    size_t count() const  noexcept { return m_Alloctor.size(); }
 
-    virtual void number_integer(int64_t value, JSON_Type type = JSON_Type::Long) override;
+    virtual void number_integer(int64_t value, js_type type = js_type::Long) override;
     virtual void number_float(double value) override;
     virtual void string(const std::basic_string_view<XCHAR> str) override;
     virtual void boolean(bool value) override;

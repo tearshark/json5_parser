@@ -56,7 +56,7 @@ void benchmark_json5_parser(const char* path, Args&&... args)
 			_SAX sax(std::forward<Args>(args)...);
 
 			const char* pszEnd = psz + length;
-			bool jv = parser.Parse(&sax, psz, &pszEnd);
+			bool jv = parser.parse(&sax, psz, &pszEnd);
 			if (jv == false)
 			{
 				std::cout << "failed." << std::endl;

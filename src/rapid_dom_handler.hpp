@@ -74,7 +74,7 @@ rapid_dom_handler::~rapid_dom_handler()
 
 inline void rapid_dom_handler::SetNameIf(rapid_value* v) noexcept
 {
-    if (m_pRootValue->type == JSON_Type::Object)
+    if (m_pRootValue->type == js_type::Object)
     {
         v->nlen = static_cast<uint16_t>(m_ChildName.size());
         v->name = m_ChildName.data();
@@ -92,7 +92,7 @@ inline void rapid_dom_handler::SetNameIf(rapid_value* v) noexcept
 void* rapid_dom_handler::start_object(bool root)
 {
     rapid_value* v = m_Alloctor.alloc();
-    v->type = JSON_Type::Object;
+    v->type = js_type::Object;
     v->elements = nullptr;
 
     if (!root)
@@ -119,7 +119,7 @@ void rapid_dom_handler::end_object(void* v)
 void* rapid_dom_handler::start_array(bool root)
 {
     rapid_value* v = m_Alloctor.alloc();
-    v->type = JSON_Type::Array;
+    v->type = js_type::Array;
     v->elements = nullptr;
 
     if (!root)
@@ -146,14 +146,14 @@ void rapid_dom_handler::end_array(void* v)
 void rapid_dom_handler::null()
 {
     rapid_value* v = m_Alloctor.alloc();
-    v->type = JSON_Type::Nullptr;
+    v->type = js_type::Nullptr;
     SetNameIf(v);
 }
 
 void rapid_dom_handler::string(const std::basic_string_view<XCHAR> str)
 {
     rapid_value* v = m_Alloctor.alloc();
-    v->type = JSON_Type::String;
+    v->type = js_type::String;
     v->slen = static_cast<uint32_t>(str.size());
     v->str = str.data();
     SetNameIf(v);
@@ -162,12 +162,12 @@ void rapid_dom_handler::string(const std::basic_string_view<XCHAR> str)
 void rapid_dom_handler::number_float(double value)
 {
     rapid_value* v = m_Alloctor.alloc();
-    v->type = JSON_Type::Double;
+    v->type = js_type::Double;
     v->f = value;
     SetNameIf(v);
 }
 
-void rapid_dom_handler::number_integer(int64_t value, JSON_Type ty)
+void rapid_dom_handler::number_integer(int64_t value, js_type ty)
 {
     rapid_value* v = m_Alloctor.alloc();
     v->type = ty;
@@ -178,7 +178,7 @@ void rapid_dom_handler::number_integer(int64_t value, JSON_Type ty)
 void rapid_dom_handler::boolean(bool value)
 {
     rapid_value* v = m_Alloctor.alloc();
-    v->type = JSON_Type::Boolean;
+    v->type = js_type::Boolean;
     v->l = value ? 1 : 0;
     SetNameIf(v);
 }
@@ -294,7 +294,7 @@ LPXSTR JSON_LoadString(LPXSTR pszStart, LPCXSTR s, LPCXSTR e) noexcept
     return psz;
 }
 
-std::basic_string<XCHAR> rapid_value::GetName() const
+std::basic_string<XCHAR> rapid_value::getName() const
 {
     std::basic_string<XCHAR> ret;
 
@@ -307,11 +307,11 @@ std::basic_string<XCHAR> rapid_value::GetName() const
     return ret;
 }
 
-std::basic_string<XCHAR> rapid_value::GetString() const
+std::basic_string<XCHAR> rapid_value::getString() const
 {
     std::basic_string<XCHAR> ret;
 
-    if (this->type == JSON_Type::String)
+    if (this->type == js_type::String)
     {
         ret.resize(this->slen);
         auto e = JSON_LoadString(const_cast<XCHAR*>(ret.data()), this->str, this->str + this->slen);

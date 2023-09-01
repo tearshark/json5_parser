@@ -1,26 +1,36 @@
 ﻿{
   "configurations": [
     {
-      "name": "WSL-Clang-Release",
+      "name": "x64-Release",
       "generator": "Ninja",
       "configurationType": "Release",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeExecutable": "/usr/bin/cmake",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "inheritEnvironments": [ "linux_clang_x64" ],
-      "wslPath": "${defaultWSLPath}",
-      "addressSanitizerRuntimeFlags": "detect_leaks=0",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
       "variables": [
         {
-          "name": "CMAKE_INSTALL_PREFIX",
-          "value": "/mnt/e/github/json5_parser/install",
-          "type": "PATH"
-        },
+          "name": "CMAKE_ENABLE_UNIT_TEST",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
+    },
+    {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
         {
-          "name": "OPT_ENABLE_DEBUG_HANDLER",
+          "name": "CMAKE_ENABLE_UNIT_TEST",
           "value": "True",
           "type": "BOOL"
         }

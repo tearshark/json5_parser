@@ -108,7 +108,7 @@ QQ交流群: 296561497
 
 | 类型               | 说明                                                         | 别名                       |
 | ------------------ | ------------------------------------------------------------ | -------------------------- |
-| enum js_type       | 描述 json5 的值的类型                                        | enum JSON_Type             |
+| enum js_type       | 描述 json5 的值的类型                                        | enum js_type             |
 | js_string          | 用于存储 json5 的String类型                                  | std::string / std::wstring |
 | js_string_view     | 用于引用 json5 的String类型                                  | std::string_view           |
 | js_variant         | variant<int64_t, double, js_string, bool, js_object_ptr, js_array_ptr, nullptr_t, monostate> |                            |

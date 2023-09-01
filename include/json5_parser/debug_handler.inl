@@ -46,7 +46,7 @@ struct js_debug_handler : public js_sax_handler
         PrintTable();
         std::cout << value << "," << std::endl;
     }
-    virtual void number_integer(int64_t value, JSON_Type = JSON_Type::Long) override
+    virtual void number_integer(int64_t value, js_type = js_type::Long) override
     {
         PrintTable();
         std::cout << value << "," << std::endl;

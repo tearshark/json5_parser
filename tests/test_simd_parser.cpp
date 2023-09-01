@@ -4,8 +4,8 @@
 #include <cassert>
 
 #pragma warning(disable : 4996 4101)
-#include "json5_parser/simd_double_parser.h"
-#include "json5_parser/fast_double_parser.h"
+#include "simd_double_parser.h"
+#include "fast_double_parser.h"
 
 int main(int argc, char* argv[])
 {

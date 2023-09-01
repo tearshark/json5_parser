@@ -15,8 +15,8 @@
 #pragma warning(disable : 26819)    //warning C26819: Unannotated fallthrough between switch labels.
 #endif
 
-#include "json5_parser/const_def.h"
 #include "json5_parser/config.h"
+#include "json5_parser/const_def.h"
 #if JSON_ENABLE_SIMD_PARSER
 #include "simd_double_parser.h"     //在综合测试中，有5% ~ 30%的性能提升，但精度就与strtod不一致。第16位精度上不一致。
 #else

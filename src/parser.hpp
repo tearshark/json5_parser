@@ -125,7 +125,7 @@ static inline LPCXSTR _json_cmp_string(LPCXSTR _s, LPCXSTR _e, LPCXSTR psz) noex
     return *psz ? nullptr : _s;
 }
 
-bool js_parser::Parse(js_sax_handler* handler, LPCXSTR psz, LPCXSTR* ppszEnd/* = nullptr*/)
+bool js_parser::parse(js_sax_handler* handler, LPCXSTR psz, LPCXSTR* ppszEnd/* = nullptr*/)
 {
     assert(handler != nullptr);
 
@@ -620,7 +620,7 @@ bool js_parser::parse_string(LPCXSTR& psz, LPCXSTR e, int nEndChar)
     return false;
 }
 
-int64_t js_parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexcept
+int64_t js_parser::_parse_long(LPCXSTR& psz, LPCXSTR e, js_type& eType) noexcept
 {
     LPCXSTR s = psz, scanstart = psz;
     if (e == nullptr)
@@ -666,7 +666,7 @@ int64_t js_parser::_parse_long(LPCXSTR& psz, LPCXSTR e, JSON_Type& eType) noexce
         while (s < e && _json_is_hex(*s)) s++;
 
     int64_t lValue = _xcstoll(scanstart, (LPXSTR*)&s, _Radix);
-    eType = JSON_Type::Long | (JSON_Type)((_Radix - 1) << 4);
+    eType = js_type::Long | (js_type)((_Radix - 1) << 4);
     psz = s;
 
     return lValue;
@@ -684,7 +684,7 @@ bool js_parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
     }
     else if (std::get<1>(result) == simd_double_parser::parser_result::Long)
     {
-        m_pWalker->number_integer(std::get<0>(result).l, JSON_Type::DecimalLong);
+        m_pWalker->number_integer(std::get<0>(result).l, js_type::DecimalLong);
         return true;
     }
     else
@@ -707,7 +707,7 @@ bool js_parser::parse_double(LPCXSTR& psz, LPCXSTR e) noexcept
     }
     else if (result == fast_double_parser::result_type::Long)
     {
-        m_pWalker->number_integer(reinterpret_cast<int64_t&>(dval), JSON_Type::DecimalLong);
+        m_pWalker->number_integer(reinterpret_cast<int64_t&>(dval), js_type::DecimalLong);
         return true;
     }
     else
@@ -747,7 +747,7 @@ bool js_parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
                 i64 = (i64 << 4) | i;
             }
 
-            m_pWalker->number_integer(i64, JSON_Type::HexLong);
+            m_pWalker->number_integer(i64, js_type::HexLong);
 
             psz = s;
             return true;
@@ -770,7 +770,7 @@ bool js_parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
                 i64 = (i64 << 1) | i;
             }
 
-            m_pWalker->number_integer(i64, JSON_Type::BinaryLong);
+            m_pWalker->number_integer(i64, js_type::BinaryLong);
 
             psz = s;
             return true;
@@ -788,7 +788,7 @@ bool js_parser::parse_number(LPCXSTR& psz, LPCXSTR e) noexcept
                 i64 = (i64 << 3) | i;
             }
 
-            m_pWalker->number_integer(i64, JSON_Type::OctalLong);
+            m_pWalker->number_integer(i64, js_type::OctalLong);
 
             psz = s;
             return true;

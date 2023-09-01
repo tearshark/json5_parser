@@ -1,7 +1,7 @@
 ﻿
 struct js_dummy_handler : public js_sax_handler
 {
-    virtual void number_integer(int64_t, JSON_Type = JSON_Type::Long) override {}
+    virtual void number_integer(int64_t, js_type = js_type::Long) override {}
     virtual void number_float(double) override {}
     virtual void string(const std::basic_string_view<XCHAR>) override {}
     virtual void boolean(bool) override {}

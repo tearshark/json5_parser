@@ -5,12 +5,13 @@
 #include <iostream>
 #include <string_view>
 #include <functional>
+#include <utility>
 
 #include "json5_parser/config.h"
+#include "json5_parser/const_def.h"
 
 namespace json5
 {
-#include "json5_parser/const_def.h"
 #include "json5_parser/xchar/xchar.h"
 
 #include "json5_parser/xchar/xchar_undef.h"
